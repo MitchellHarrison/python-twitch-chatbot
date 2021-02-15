@@ -8,11 +8,13 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 OAUTH_TOKEN = os.getenv("OAUTH_TOKEN")
 BOT_NAME = "mitchsrobot"
 CHANNEL = "mitchsworkshop"
+SERVER = "irc.twitch.tv"
+PORT = 6667
 
 class Bot():
     def __init__(self):
-        self.server = "irc.twitch.tv"
-        self.port = 6667
+        self.server = SERVER
+        self.port = PORT
         self.oauth_token = OAUTH_TOKEN
         self.username = BOT_NAME
         self.channel = CHANNEL
@@ -27,15 +29,18 @@ class Bot():
         self.send_message(self.channel, "Happy Valentine's Day, everyone! <3")
         self.check_for_messages()
 
-
+    
+    # executing IRC commands
     def irc_command(self, command):
         self.irc.send((command + "\r\n").encode())
 
 
+    # sending privmsg's, which are normal chat messages
     def send_message(self, channel, message):
         self.irc_command(f"PRIVMSG #{channel} :{message}")
 
 
+    # decode incoming messages
     def check_for_messages(self):
         while True:
             messages = self.irc.recv(1024).decode()
@@ -43,12 +48,15 @@ class Bot():
                 self.parse_message(m)
 
 
+    # check for command being executed
     def parse_message(self, message):
         try:
+            # regex pattern
             pat_message = re.compile(r":(?P<user>.+)!.+#mitchsworkshop :(?P<text>.+)", flags=re.IGNORECASE)
+            # pull user and text from each message
             user = re.search(pat_message, message).group("user")
             text = re.search(pat_message, message).group("text")
-            print(f"{user} - {text}")
+            # check for commands being used
             if text.startswith("!"):
                 command = text.split()[0]
                 self.execute_command(user, command) 
@@ -56,6 +64,7 @@ class Bot():
             pass
 
 
+    # define and execute each command
     def execute_command(self, user, command):
         if command == "!love":
             self.send_message(
@@ -88,5 +97,10 @@ class Bot():
             )
 
 
-bot = Bot()
-bot.connect_to_channel()
+def main():
+    bot = Bot()
+    bot.connect_to_channel()
+
+
+if __name__ == "__main__":
+    main()

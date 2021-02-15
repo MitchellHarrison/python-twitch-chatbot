@@ -30,12 +30,12 @@ class Bot():
         self.check_for_messages()
 
     
-    # executing IRC commands
+    # execute IRC commands
     def irc_command(self, command):
         self.irc.send((command + "\r\n").encode())
 
 
-    # sending privmsg's, which are normal chat messages
+    # send privmsg's, which are normal chat messages
     def send_message(self, channel, message):
         self.irc_command(f"PRIVMSG #{channel} :{message}")
 

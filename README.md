@@ -1,5 +1,5 @@
-## Mitch's Robot ##
-# My Twitch bot, built live on stream. https://twitch.tv/MitchsWorkshop #  
+# Mitch's Robot #
+## My Twitch bot, built live on stream. https://twitch.tv/MitchsWorkshop ##  
 
 The bot will track and visualize several data points to provide content insight. Planned data points include:
 * top chatters  

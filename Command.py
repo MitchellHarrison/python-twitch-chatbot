@@ -123,3 +123,27 @@ class PoemCommand(CommandBase):
             message = f"@{user}, I couldn't find a short enough poem. I'm sorry. :("
         )
 
+
+class DataquestCommand(CommandBase):
+    @property 
+    def command_name(self):
+        return "!dataquest"
+
+    def execute(self, user):
+        self.bot.send_message(
+                channel = self.bot.channel,
+                message = f"@{user}, Mitch uses a service called DataQuest to learn data science and visualization. Check it out here! I use a service called Data Quest to learn data science. Join here! app.dataquest.io/referral-signup/iz2u2cab/"
+            ) 
+
+
+class SpecsCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!specs"
+
+    
+    def execute(self, user):
+        self.bot.send_message(
+                channel = self.bot.channel,
+                message = f"@{user}, CPU - i7 9700k; GPU - RTX 2080; RAM - 16GB Trident Z DDR4"
+            )

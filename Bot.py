@@ -102,91 +102,10 @@ class Bot():
                 writer = csv.writer(file)
                 writer.writerow(entry.keys())
                 writer.writerow([v for k,v in entry.items()])
-            
-    
-    # pull joke from Jokes API
-    def get_joke(self, user) -> str:
-        url = "https://geek-jokes.sameerkumar.website/api?format=json"
-        for _ in range(10):
-            result = requests.get(url).json()
-            joke = result["joke"]
-            if len(joke) <= 500:
-                return joke
-        return f"Sorry @{user}, I couldn't find a short enough joke. :("
 
 
-    # pull poem from PoetryDB
-    def get_poem(self, user) -> str:
-        num_lines = 4
-        url = f"https://poetrydb.org/linecount/{num_lines}/lines"
-        result = requests.get(url)
-        poems = json.loads(result.text)
-        num_poems = len(poems)
-        for _ in range(5):
-            idx = random.randint(0, num_poems)
-            lines = poems[idx]["lines"]
-            poem = "; ".join(lines)
-            if len(poem) <= 500:
-                return poem
-        return f"I couldn't find a short enough poem. Sorry @{user} :("
-
-
-    # define and execute each command
+    # execute each command
     def execute_command(self, user, command):
         if command in self.commands.keys():
             self.commands[command].execute(user)   
-            # if command == "!love":
-            #     self.send_message(
-            #         channel = self.channel, 
-            #         message = f"I love you, @{user}"
-            #     )
-
-            # if command == "!github":
-            #     self.send_message(
-            #         channel = self.channel, 
-            #         message = "See past on-stream projects on Mitch's GitHub here! https://github.com/MitchellHarrison"
-            #     )
-
-            # if command == "!discord":
-            #     self.send_message(
-            #         channel = self.channel, 
-            #         message = "Give or receive help or engage in nerdy debauchery in The Workshop discord server! https://discord.gg/9yFFNpP"
-            #     )
-
-            # if command == "!theme":
-            #     self.send_message(
-            #         channel = self.channel,
-            #         message = "Current VSCode theme is Monokai Vibrant!"
-            #     )
-
-            # if command == "!specs":
-            #     self.send_message(
-            #         channel = self.channel,
-            #         message = "CPU - i7 9700k; GPU - RTX 2080; RAM - 16GB Trident Z DDR4"
-            #     )
-
-            # if command == "!twitter":
-            #     self.send_message(
-            #         channel = self.channel, 
-            #         message = "Twitter is your one-stop-shop for streams of consciousness and Macswell pics!  https://twitter.com/MitchsWorkshop"
-            #     )
-
-            # if command == "!dataquest":
-            #     self.send_message(
-            #         channel = self.channel, 
-            #         message = "I use a service called DataQuest to learn data science. Join here! app.dataquest.io/referral-signup/iz2u2cab/"
-            #     )
-
-            # if command == "!poem":
-            #     self.send_message(
-            #         channel = self.channel,
-            #         message = self.get_poem(user=user)
-            #     )
-
-            # if command == "!joke":
-            #     self.send_message(
-            #         channel = self.channel,
-            #         message = self.get_joke(user=user)
-            #     )
-
             self.write_command_data(user, command)

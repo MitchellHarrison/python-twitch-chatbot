@@ -13,8 +13,9 @@ SERVER = "irc.twitch.tv"
 PORT = 6667
 
 
+# check for missing .db file or missing tables, and create them
 def db_setup():
-    # TODO create SQL tables if none exist
+    # if "data.db" doesn't exist, connect() will create it
     conn = sqlite3.connect("data.db")
     cursor = conn.cursor()
     with conn:

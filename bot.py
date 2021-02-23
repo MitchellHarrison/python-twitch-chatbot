@@ -1,10 +1,5 @@
 import socket
 import re
-import csv
-import os
-import requests
-import json
-import random
 import sqlite3
 import command
 from datetime import datetime
@@ -19,6 +14,7 @@ class Bot():
         self.commands = {s.command_name: s for s in (c(self) for c in command.CommandBase.__subclasses__())}
 
 
+    # connect to IRC server and begin checking for messages
     def connect_to_channel(self):
         self.irc = socket.socket()
         self.irc.connect((self.server, self.port))

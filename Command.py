@@ -91,6 +91,7 @@ class JokeCommand(CommandBase):
                     channel = self.bot.channel,
                     message = joke
                 )
+                break
         self.bot.send_message(
             channel = self.bot.channel,
             message = f"I'm sorry @{user}! I couldn't find a short enough joke. :("
@@ -100,7 +101,7 @@ class JokeCommand(CommandBase):
 class PoemCommand(CommandBase):
     @property
     def command_name(self):
-        return "!joke"
+        return "!poem"
     
 
     def execute(self, user):

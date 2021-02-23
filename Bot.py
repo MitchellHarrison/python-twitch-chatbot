@@ -5,10 +5,9 @@ import os
 import requests
 import json
 import random
+import sqlite3
 import Command
 from datetime import datetime
-
-
 
 class Bot():
     def __init__(self, server, port, token, username, channel):
@@ -31,12 +30,12 @@ class Bot():
 
     
     # execute IRC commands
-    def irc_command(self, command):
+    def irc_command(self, command: str):
         self.irc.send((command + "\r\n").encode())
 
 
     # send privmsg's, which are normal chat messages
-    def send_message(self, channel, message):
+    def send_message(self, channel: str, message: str):
         self.irc_command(f"PRIVMSG #{channel} :{message}")
 
 
@@ -48,26 +47,8 @@ class Bot():
                 self.parse_message(m)
 
 
-    # write message author to csv
-    def write_message_data(self, user):
-        entry = {
-            "time": str(datetime.now()),
-            "user": user,
-        }
-        if os.path.isfile("./data/chat_count.csv"):
-            with open("./data/chat_count.csv", "a") as file:
-                writer = csv.writer(file)
-                writer.writerow([v for k,v in entry.items()])
-            
-        else:
-            with open("./data/chat_count.csv", "a") as file:
-                writer = csv.writer(file)
-                writer.writerow(entry.keys())
-                writer.writerow([v for k,v in entry.items()])
-
-
     # check for command being executed
-    def parse_message(self, message):
+    def parse_message(self, message: str):
         try:
             # regex pattern
             pat_message = re.compile(r":(?P<user>.+)!.+#mitchsworkshop :(?P<text>.+)", flags=re.IGNORECASE)
@@ -75,37 +56,46 @@ class Bot():
             user = re.search(pat_message, message).group("user")
             text = re.search(pat_message, message).group("text")
 
-            self.write_message_data(user)
-
             # check for commands being used
             if text.startswith("!"):
                 command = text.split()[0]
                 self.execute_command(user, command)
-        except:
+            self.store_message_data(user)
+
+        except AttributeError:
             pass
 
     
-    # write command usage data to CSV
-    def write_command_data(self, user, command):
+    # insert data to SQLite db
+    def store_message_data(self, user: str):
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor()
         entry = {
-            "time": str(datetime.now()),
-            "user": user,
-            "command": command
+            "time" : str(datetime.now()),
+            "user" : user
         }
-        if os.path.isfile("./data/command_data.csv"):
-            with open("./data/command_data.csv", "a") as file:
-                writer = csv.writer(file)
-                writer.writerow([v for k,v in entry.items()])
-            
-        else:
-            with open("./data/command_data.csv", "a") as file:
-                writer = csv.writer(file)
-                writer.writerow(entry.keys())
-                writer.writerow([v for k,v in entry.items()])
+        with conn:
+            cursor.execute("INSERT INTO chat_messages VALUES (:time, :user)", entry)
+        cursor.close()
+        conn.close()
 
 
-    # execute each command
-    def execute_command(self, user, command):
+    # insert data to SQLite db
+    def store_command_data(self, user: str, command: str):
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor()
+        entry = {
+            "time" : str(datetime.now()),
+            "user" : user,
+            "command" : command
+        }
+        with conn:
+            cursor.execute("INSERT INTO command_use VALUES (:time, :user, :command)", entry)
+        cursor.close()
+        conn.close()
+
+        # execute each command
+    def execute_command(self, user: str, command: str):
         if command in self.commands.keys():
             self.commands[command].execute(user)   
-            self.write_command_data(user, command)
+            self.store_command_data(user, command)

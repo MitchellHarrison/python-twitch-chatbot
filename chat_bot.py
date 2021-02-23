@@ -1,8 +1,8 @@
 import os
 import sqlite3
-import Command
+import command
 from dotenv import load_dotenv
-from Bot import Bot
+from bot import Bot
 
 load_dotenv("./credentials.env")
 CLIENT_ID = os.getenv("CLIENT_ID")

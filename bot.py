@@ -6,7 +6,7 @@ import requests
 import json
 import random
 import sqlite3
-import Command
+import command
 from datetime import datetime
 
 class Bot():
@@ -16,7 +16,7 @@ class Bot():
         self.oauth_token = token
         self.username = username
         self.channel = channel
-        self.commands = {s.command_name: s for s in (c(self) for c in Command.CommandBase.__subclasses__())}
+        self.commands = {s.command_name: s for s in (c(self) for c in command.CommandBase.__subclasses__())}
 
 
     def connect_to_channel(self):

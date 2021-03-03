@@ -1,6 +1,5 @@
 import os
 import sqlite3
-import command
 from dotenv import load_dotenv
 from bot import Bot
 
@@ -21,13 +20,25 @@ def db_setup():
     with conn:
         cursor.execute("CREATE TABLE IF NOT EXISTS command_use (time text, user text, command text);")
         cursor.execute("CREATE TABLE IF NOT EXISTS chat_messages (time text, user text);")
+        cursor.execute("CREATE TABLE IF NOT EXISTS text_commands (command text, message text);")
     cursor.close()
     conn.close()
 
 
+def get_text_commands() -> dict:
+    conn = sqlite3.connect("data.db")
+    cursor = conn.cursor()
+    with conn:
+        commands = {k:v for k,v in [e for e in cursor.execute("SELECT * FROM text_commands;")]}
+    cursor.close()
+    conn.close()
+    return commands
+
+
 def main():
     db_setup()
-    bot = Bot(SERVER, PORT, OAUTH_TOKEN, BOT_NAME, CHANNEL)
+    text_commands = get_text_commands()
+    bot = Bot(SERVER, PORT, OAUTH_TOKEN, BOT_NAME, CHANNEL, text_commands)
     bot.connect_to_channel()
 
 

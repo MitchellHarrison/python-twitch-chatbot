@@ -1,6 +1,7 @@
 import requests
 import random
 import json
+import sqlite3
 from abc import ABC, abstractmethod
 
 class CommandBase(ABC):
@@ -8,14 +9,14 @@ class CommandBase(ABC):
         self.bot = bot
 
 
-    @abstractmethod 
-    def execute(self):
-        raise NotImplementedError
-
-
     @property 
     @abstractmethod
     def command_name(self):
+        raise NotImplementedError
+    
+    
+    @abstractmethod 
+    def execute(self):
         raise NotImplementedError
 
 
@@ -23,56 +24,109 @@ class CommandBase(ABC):
         return f"Command: {self.command_name}"
 
 
-class DiscordCommand(CommandBase):
-    @property 
-    def command_name(self):
-        return "!discord"
-
-
-    def execute(self, user):
-        self.bot.send_message(
-            channel = self.bot.channel, 
-            message = f"@{user}, Give or receive help or engage in nerdy debauchery in The Workshop discord server! https://discord.gg/9yFFNpP"
-        )
-
-
-class GithubCommand(CommandBase):
-    @property 
-    def command_name(self):
-        return "!github"
-
-    
-    def execute(self, user):
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = f"@{user}, See past on-stream projects on Mitch's GitHub here! https://github.com/MitchellHarrison"
-        )
-    
-
-class TwitterCommand(CommandBase):
-    @property 
-    def command_name(self):
-        return "!twitter"
-
-
-    def execute(self, user):
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = f"@{user}, Twitter is your one-stop-shop for streams of consciousness and Macswell pics!  https://twitter.com/MitchsWorkshop"
-        )  
-
-
-class ThemeCommaned(CommandBase):
+# TODO: !addcommand
+class AddCommand(CommandBase):
     @property
     def command_name(self):
-        return "!theme"
+        return "!addcommand"
 
 
-    def execute(self, user):
-        self.bot.send_message(
-                channel = self.bot.channel,
-                message = f"@{user}, Current VSCode theme is Monokai Vibrant!"
-            )      
+    def execute(self, user, message):
+        if user == self.bot.channel:
+            first_word = message.split()[1]
+            command = first_word if first_word.startswith("!") else "!" + first_word
+            result = " ".join(message.split()[2:])
+
+            if command in self.bot.text_commands.keys():
+                self.bot.send_message(
+                    self.bot.channel,
+                    f"That command doesn't exist, @{user}."
+                )
+                return
+
+            conn = sqlite3.connect("data.db")
+            cursor = conn.cursor()
+            entry = {
+                "command" : command,
+                "message" : result
+            }
+            with conn:
+                cursor.execute("INSERT INTO text_commands (command, message) VALUES (:command, :message)", entry)
+            cursor.close()
+            conn.close()
+            self.bot.send_message(
+                self.bot.channel,
+                f"{command} added successfully!"
+            )
+
+
+# delete existing text command
+class DeleteCommand(CommandBase):
+    @property 
+    def command_name(self):
+        return "!delcommand"
+
+
+    def execute(self, user, message):
+        if user == self.bot.channel:
+            first_word = message.split()[1]
+            command = first_word if first_word.startswith("!") else "!" + first_word
+
+            conn = sqlite3.connect("data.db")
+            cursor = conn.cursor()
+            cursor.execute("SELECT command FROM text_commands;")
+            conn.commit()
+            current_commands = [c[0] for c in cursor.fetchall()]
+            if command not in current_commands:
+                self.bot.send_message(
+                    self.bot.channel,
+                    f"The {command} command doesn't exist, @{user}."
+                )
+                return
+            
+            cursor.execute(f"DELETE FROM text_commands WHERE command = '{command}';")
+            conn.commit()
+            cursor.close()
+            conn.close()
+            self.bot.send_message(
+                self.bot.channel,
+                f"!{command} command deleted, @{user}."
+            )
+
+
+# edit existing text command
+class EditCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!editcommand"
+
+    
+    def execute(self, user, message):
+        if user == self.bot.channel:
+            first_word = message.split()[1]
+            command = first_word if first_word.startswith("!") else "!" + first_word
+
+            conn = sqlite3.connect("data.db")
+            cursor = conn.cursor()
+            cursor.execute("SELECT command FROM text_commands")
+            current_commands = [c[0] for c in cursor.fetchall()]
+
+            if command not in current_commands:
+                self.bot.send_message(
+                    self.bot.channel,
+                    f"That command doesn't exist, @{user}."
+                )
+                return 
+            
+            new_message = " ".join(message.split()[2:])
+            cursor.execute(f"UPDATE text_commands SET message = '{new_message}' WHERE command = '{command}';")
+            conn.commit()
+            cursor.close()
+            conn.close()
+            self.bot.send_message(
+                self.bot.channel,
+                f"{command} command edit complete @{user}!"
+            )
 
 
 class JokeCommand(CommandBase):
@@ -81,7 +135,7 @@ class JokeCommand(CommandBase):
         return "!joke"
 
     
-    def execute(self, user):
+    def execute(self, user, message):
         url = "https://geek-jokes.sameerkumar.website/api?format=json"
         for _ in range(10):
             result = requests.get(url).json()
@@ -94,7 +148,7 @@ class JokeCommand(CommandBase):
                 break
         self.bot.send_message(
             channel = self.bot.channel,
-            message = f"I'm sorry @{user}! I couldn't find a short enough joke. :("
+            message = f"I'm sorry! I couldn't find a short enough joke. :("
         )
 
 
@@ -104,7 +158,7 @@ class PoemCommand(CommandBase):
         return "!poem"
     
 
-    def execute(self, user):
+    def execute(self, user, message):
         num_lines = 4
         url = f"https://poetrydb.org/linecount/{num_lines}/lines"
         result = requests.get(url)
@@ -123,28 +177,3 @@ class PoemCommand(CommandBase):
             channel = self.bot.channel,
             message = f"@{user}, I couldn't find a short enough poem. I'm sorry. :("
         )
-
-
-class DataquestCommand(CommandBase):
-    @property 
-    def command_name(self):
-        return "!dataquest"
-
-    def execute(self, user):
-        self.bot.send_message(
-                channel = self.bot.channel,
-                message = f"@{user}, Mitch uses a service called DataQuest to learn data science and visualization. Check it out here! I use a service called Data Quest to learn data science. Join here! app.dataquest.io/referral-signup/iz2u2cab/"
-            ) 
-
-
-class SpecsCommand(CommandBase):
-    @property
-    def command_name(self):
-        return "!specs"
-
-    
-    def execute(self, user):
-        self.bot.send_message(
-                channel = self.bot.channel,
-                message = f"@{user}, CPU - i7 9700k; GPU - RTX 2080; RAM - 16GB Trident Z DDR4"
-            )

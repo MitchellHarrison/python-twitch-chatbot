@@ -1,5 +1,4 @@
 *.env
-*.csv
 *.pyc
 *.png
 *.db

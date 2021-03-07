@@ -51,7 +51,7 @@ class AddCommand(CommandBase):
                 "message" : result
             }
             with conn:
-                cursor.execute("INSERT INTO text_commands (command, message) VALUES (:command, :message)", entry)
+                cursor.execute("INSERT INTO text_commands (command, message) VALUES (:command, :message);", entry)
             cursor.close()
             conn.close()
             self.bot.send_message(
@@ -108,7 +108,7 @@ class EditCommand(CommandBase):
 
             conn = sqlite3.connect("data.db")
             cursor = conn.cursor()
-            cursor.execute("SELECT command FROM text_commands")
+            cursor.execute("SELECT command FROM text_commands;")
             current_commands = [c[0] for c in cursor.fetchall()]
 
             if command not in current_commands:

@@ -40,6 +40,11 @@ class Bot():
     def check_for_messages(self):
         while True:
             messages = self.irc.recv(1024).decode()
+
+            # respond to pings from Twitch
+            if messages.startswith("PING"):
+                self.irc_command("PONG :tmi.twitch.tv")
+                
             for m in messages.split("\r\n"):
                 self.parse_message(m)
 

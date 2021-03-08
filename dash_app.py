@@ -2,27 +2,17 @@ import dash
 import sqlite3
 import dash_core_components as dcc 
 import dash_html_components as html 
+import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import pandas as pd
 from dash.dependencies import Input, Output
 
-app = dash.Dash(__name__)
-colors = {
-    "background" : "#05101E",
-    "text_base" : "#E0E0E0",
-}
-app_style = {
-    "background-color" : colors["background"]
-}
-chart_layout = {
-    "font" : dict(
-        family = "poppins",
-        size = 20,
-        color = colors["text_base"]),
-    "paper_bgcolor" : colors["background"],
-    "plot_bgcolor" : "rgba(0, 0, 0, 0)",
-    "height" : 700
-}
+external_stylesheets = [
+    "https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap-grid.min.css"
+]
+app = dash.Dash(__name__, external_stylesheets = external_stylesheets)
+
+colors = {"background" : "#05101E", "text_base" : "#E0E0E0"}
 
 # create dataframes from DB
 conn = sqlite3.connect("data.db")
@@ -30,54 +20,59 @@ chat_messages = pd.read_sql("SELECT * FROM chat_messages", conn)
 command_use = pd.read_sql("SELECT * FROM command_use", conn)
 conn.close()
 
-app.layout = html.Div(style = app_style, children = [
-    html.H1(
-        children = "Twitch Data Visualization Dashboard",
-        style = {
-            "font-family" : "poppins",
-            "text-align" : "center",
-            "color" : colors["text_base"],
-            "font-size" : "80px",
-            "padding" : "0px",
-            "margin" : "0px",
-            "font-weight" : "normal"
-            }
+# start of app layout
+app.layout = html.Div([
+    dbc.Row(
+        dbc.Col(html.H1("Twitch Data Visualization Dashboard",id="app-title"))
         ),
 
-    html.H2(
-        children = "By Mitch",
-        id = "subtitle",
-        style = {
-            "font-family" : "poppins",
-            "text-align" : "center",
-            "color" : colors["text_base"],
-            "padding" : "px",
-            "margin" : "0px"
-            }
+    dbc.Row(
+        dbc.Col(html.H2("By Mitch",id = "app-subtitle"))
         ),
 
-    dcc.Slider(
-        id = "top-chatter-number",
-        min = 5,
-        max = len(chat_messages["user"].unique()),
-        value = 10,
-        marks = {i : i for i in range(5, len(chat_messages["user"].unique()) + 1)},
-        step = 1
-    ),
+    dbc.Row([
+        dbc.Col(
+            dcc.Slider(
+                id = "top-command-use",
+                min = 1,
+                max = len(command_use["command"].unique()),
+                value = len(command_use["command"].unique()),
+                marks = {i : str(i) for i in range(1, len(command_use["command"].unique())+1)},
+                step = 1
+            ), 
+            width = 6
+        ),
 
-    dcc.Graph(id = "bar-top-chatters"),
+        dbc.Col(
+            dcc.Slider(
+                id = "top-chatter-number",
+                min = 5,
+                max = len(chat_messages["user"].unique()),
+                value = 10,
+                marks = {i : str(i) for i in range(5, len(chat_messages["user"].unique()) + 1)},
+                step = 1
+            ),
+            width = 6
+        )
+    ]),
 
-    dcc.Slider(
-        id = "top-command-use",
-        min = 1,
-        max = len(command_use["command"].unique()),
-        value = len(command_use["command"].unique()),
-        marks = {i : i for i in range(1, len(command_use["command"].unique())+1)},
-        step = 1
-    ),
-
-    dcc.Graph(id = "bar-top-commands")
+    dbc.Row([
+        dbc.Col(dcc.Graph(id = "bar-top-commands")),
+        dbc.Col(dcc.Graph(id = "bar-top-chatters"))
+        ])
 ])
+
+
+chart_layout = {
+    "font" : dict(
+        family = "poppins",
+        size = 20,
+        color = colors["text_base"]),
+    "paper_bgcolor" : "rgba(0,0,0,0)",
+    "plot_bgcolor" : "rgba(0,0,0,0)",
+    "height" : 700
+}
+
 
 @app.callback(
     Output(component_id = "bar-top-chatters", component_property = "figure"),
@@ -123,4 +118,4 @@ def bar_command_use(top_num: int):
 
 
 if __name__ == '__main__':
-    app.run_server()
+    app.run_server(debug=True)

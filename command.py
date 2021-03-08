@@ -136,9 +136,10 @@ class JokeCommand(CommandBase):
 
     
     def execute(self, user, message):
-        url = "https://geek-jokes.sameerkumar.website/api?format=json"
+        url = "https://icanhazdadjoke.com/"
+        headers = {"accept" : "application/json"}
         for _ in range(10):
-            result = requests.get(url).json()
+            result = requests.get(url, headers = headers).json()
             joke = result["joke"]
             if len(joke) <= 500:
                 self.bot.send_message(

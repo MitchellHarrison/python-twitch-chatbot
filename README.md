@@ -1,5 +1,5 @@
-# Twitch Chat Bot and Analytics Dashboard #
-### 📊 An all-in-one Twitch engagement and analytics project, built live on stream. https://twitch.tv/MitchsWorkshop ###  
+# 📊 Twitch Chat Bot and Analytics Dashboard #
+### An all-in-one Twitch engagement and analytics project, built live on stream. https://twitch.tv/MitchsWorkshop ###  
   
 Twitch has terrible anlytics. The .csv file you can download from your creator dashboard is dirty, doesn't include the title of the stream or the category of the stream, and is generally unhelpful from a business standpoint. Plus, the average user doesn't have the skillset required to visualize that data to gain their own insights. Relying on Twitch to provide business guidance has simply never worked. I wanted something better, so I'm building it.  
   

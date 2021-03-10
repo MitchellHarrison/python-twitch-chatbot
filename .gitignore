@@ -1,6 +1,5 @@
 *.env
 *.pyc
-*.png
 *.db
 *.txt
 *.ipynb

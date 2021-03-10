@@ -35,6 +35,28 @@ def build_title():
     ])
 
 
+def get_chat_messages():
+    conn = sqlite3.connect("data.db")
+    with conn:
+        df = pd.read_sql("SELECT * FROM chat_messages", conn)
+    return df
+
+
+def build_chatter_slider():
+    df = get_chat_messages()
+    num_chatters = len(df["user"].unique())
+    slider_max = 50 if num_chatters > 50 else num_chatters
+    step = slider_max // 15
+    return dcc.Slider(
+                id = "top-chatter-number",
+                min = 1,
+                max = slider_max,
+                value = slider_max // 2,
+                marks = {i : str(i) for i in range(1,slider_max, step)},
+                # step = step
+            )
+
+
 def build_footer():
     return html.Div(id = "discord-footer", children = [
         html.Span(id = "discord-icon", children = [
@@ -59,10 +81,7 @@ def build_footer():
     Input(component_id="interval-counter", component_property="n_intervals")]
 )
 def bar_top_chatters(top_num: int, n:int) -> go.Figure:
-    conn = sqlite3.connect("data.db")
-    with conn:
-        df = pd.read_sql("SELECT * FROM chat_messages", conn)
-
+    df = get_chat_messages()
     data = df["user"].value_counts().reset_index()
     data.columns = ["user", "message_count"]
     trace_data = data.head(top_num)
@@ -89,27 +108,25 @@ def bar_top_chatters(top_num: int, n:int) -> go.Figure:
 # command use bar graph
 @app.callback(
     Output(component_id = "bar-top-commands", component_property = "figure"),
-    [Input(component_id = "top-command-use", component_property = "value"),
-    Input(component_id = "interval-counter", component_property = "n_intervals")]
+    [Input(component_id = "interval-counter", component_property = "n_intervals")]
 )
-def bar_command_use(top_num: int, n: int) -> go.Figure:
+def bar_command_use(n: int) -> go.Figure:
     conn = sqlite3.connect("data.db")
     with conn:
         df = pd.read_sql("SELECT * FROM command_use", conn)
     
     data = df["command"].value_counts().reset_index()
     data.columns = ["command", "count"]
-    trace_data = data.head(top_num)
 
     trace = go.Bar(
-        x = trace_data["command"],
-        y = trace_data["count"]
+        x = data["command"],
+        y = data["count"]
     )
 
     fig = go.Figure(data = [trace], layout = chart_layout)
     fig.update_layout({
         "title" : dict(
-            text = f"Top {top_num} Commands Used - All Time",
+            text = f"Top Commands Used - All Time",
             font = dict(
                 family = "poppins", 
                 size = 35, 
@@ -124,30 +141,12 @@ def bar_command_use(top_num: int, n: int) -> go.Figure:
 app.layout = html.Div([
     dbc.Row(dbc.Col(build_title())),
 
-    dbc.Row([
+    dbc.Row(
         dbc.Col(
-            dcc.Slider(
-                id = "top-command-use",
-                min = 1,
-                max = 4,
-                value = 4,
-                marks = {i : str(i) for i in range(1,5)},
-                step = 1
-            ),
-            width = 3
-        ),
-
-        dbc.Col(
-            dcc.Slider(
-                id = "top-chatter-number",
-                min = 1,
-                max = 40,
-                value = 20,
-                marks = {i : str(i) for i in range(1,41)},
-                step = 1
-            )
+            build_chatter_slider(),
+            width = {"size":9, "offset":3}
         )
-    ]),
+    ),
 
     dbc.Row([
         dbc.Col(dcc.Graph(id = "bar-top-commands"), width = 3),
@@ -156,7 +155,7 @@ app.layout = html.Div([
 
     dcc.Interval(
         id = "interval-counter",
-        interval = 5 * 1000, # in milliseconds
+        interval = 1000, # in milliseconds
         n_intervals = 0
     ),
 

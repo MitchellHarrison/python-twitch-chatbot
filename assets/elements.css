@@ -1,0 +1,13 @@
+.rc-slider-mark {
+    font-family : poppins;
+    color : white;
+}
+
+.rc-slider-track {
+    background-color: #48C0F3
+}
+
+#discord-icon {
+    margin-top: 50px;
+    margin-right: 5px; 
+}

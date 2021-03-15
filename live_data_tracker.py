@@ -47,7 +47,7 @@ def get_stream_data(channel: str, client_id: str, bearer: str) -> dict:
     response = requests.get(url, headers = headers)
     data = json.loads(response.content)
     return data["data"][0]
-   
+
 
 def get_tags(channel: str, client_id: str, bearer: str, broadcaster_id: str) -> list:
     url = f"https://api.twitch.tv/helix/streams/tags?broadcaster_id={broadcaster_id}"
@@ -78,10 +78,24 @@ def write_live_data(entry):
 
 
 bearer = get_bearer(CLIENT_ID, CLIENT_SECRET)
+<<<<<<< HEAD
 stream_data = get_stream_data(CHANNEL, CLIENT_ID, bearer) 
 is_live = stream_data["type"] == "live"
 broadcaster_id = stream_data["user_id"]
 current_min = datetime.now().minute
+=======
+while True:
+    try:
+        stream_data = get_stream_data(CHANNEL, CLIENT_ID, bearer) 
+        is_live = stream_data["type"] == "live"
+        broadcaster_id = stream_data["user_id"]
+        current_min = datetime.now().minute
+        print(current_min)
+
+    except IndexError:
+        print("Broadcaster is not currently live")
+        time.sleep(60)        
+>>>>>>> af47254d77518e353bac5d25f41ee0f03ea1cb41
 
 while is_live:
     if current_min != datetime.now().minute:

@@ -21,7 +21,7 @@ class CommandBase(ABC):
 
 
     def __repr__(self):
-        return f"Command: {self.command_name}"
+        return self.command_name
 
 
 # TODO: !addcommand
@@ -178,3 +178,34 @@ class PoemCommand(CommandBase):
             channel = self.bot.channel,
             message = f"@{user}, I couldn't find a short enough poem. I'm sorry. :("
         )
+
+
+class CommandsCommand(CommandBase):
+    @property 
+    def command_name(self):
+        return "!commands"
+
+    
+    def execute(self, user, message):
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor()
+        with conn:
+            cursor.execute("SELECT command FROM text_commands")
+            text_commands = [t[0] for t in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+        
+        hard_commands = [c.command_name for c in (s(self) for s in CommandBase.__subclasses__())]
+        commands_str = ", ".join(text_commands) + ", " + ", ".join(hard_commands)
+        
+        # check if commands fit in chat; dropping 
+        while len(commands_str) > 500:
+            commands = commands_str.split()
+            commands = commands[:-2]
+            commands_str = " ".join(commands)
+        
+        self.bot.send_message(
+            channel = self.bot.channel,
+            message = commands_str
+        )
+

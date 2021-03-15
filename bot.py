@@ -68,13 +68,31 @@ class Bot():
             # check for commands being used
             if text.startswith("!"):
                 command = text.split()[0]
-                self.execute_command(user, command, text)
+                if command not in self.text_commands and command not in self.commands:
+                    self.store_wrong_command(user, command)
+                else:
+                    self.execute_command(user, command, text)
             self.store_message_data(user)
 
         except AttributeError:
             pass
 
     
+    # store data on commands attempted that don't exist
+    def store_wrong_command(self, user: str, command: str):
+        entry = {
+            "time" : datetime.now(),
+            "user" : user,
+            "command" : command
+        }
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor()
+        with conn:
+            cursor.execute("INSERT INTO false_commands (time, user, command) VALUES (:time, :user, :command)", entry)
+        cursor.close()
+        conn.close()
+        
+
     # insert data to SQLite db
     def store_message_data(self, user: str):
         conn = sqlite3.connect("data.db")
@@ -90,32 +108,38 @@ class Bot():
 
 
     # insert data to SQLite db
-    def store_command_data(self, user: str, command: str):
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor()
+    def store_command_data(self, user: str, command: str, is_custom: int):
         entry = {
             "time" : str(datetime.now()),
             "user" : user,
-            "command" : command
+            "command" : command,
+            "is_custom" : str(is_custom)
         }
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor()
         with conn:
-            cursor.execute("INSERT INTO command_use (time, user, command) VALUES (:time, :user, :command)", entry)
+            cursor.execute("""INSERT INTO command_use (time, user, command, is_custom) 
+                                VALUES (:time, :user, :command, :is_custom)""", entry)
         cursor.close()
         conn.close()
 
 
     # execute each command
     def execute_command(self, user: str, command: str, message: str):
+        # execute hard-coded command
         if command in self.commands.keys():
-            self.commands[command].execute(user, message)   
-            self.store_command_data(user, command)
+            self.commands[command].execute(user, message) 
+            is_custom_command = 0 
+            self.store_command_data(user, command, is_custom_command)
 
+        # execute custom text commands
         elif command in self.text_commands.keys():
             self.send_message(
                 self.channel,
                 self.text_commands[command]
             )
-            self.store_command_data(user, command)
+            is_custom_command = 1
+            self.store_command_data(user, command, is_custom_command)
         
         self.text_commands = self.reload_text_commands()
 

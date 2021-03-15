@@ -115,15 +115,26 @@ def bar_command_use(n: int) -> go.Figure:
     with conn:
         df = pd.read_sql("SELECT * FROM command_use", conn)
     
-    data = df["command"].value_counts().reset_index()
-    data.columns = ["command", "count"]
+    data_custom = df[df["is_custom"]==True]
+    data_custom = data_custom["command"].value_counts().reset_index()
+    data_custom.columns = ["command", "count"]
 
-    trace = go.Bar(
-        x = data["command"],
-        y = data["count"]
+    data_hard_coded = df[df["is_custom"]==False]
+    data_hard_coded = data_hard_coded["command"].value_counts().reset_index()
+    data_hard_coded.columns = ["command", "count"]
+
+    trace1 = go.Bar(
+        x = data_custom["command"],
+        y = data_custom["count"],
+        name = "Custom"
+    )
+    trace2 = go.Bar(
+        x = data_hard_coded["command"],
+        y = data_hard_coded["count"],
+        name = "Default"
     )
 
-    fig = go.Figure(data = [trace], layout = chart_layout)
+    fig = go.Figure(data = [trace1, trace2], layout = chart_layout)
     fig.update_layout({
         "title" : dict(
             text = f"Top Commands Used - All Time",
@@ -132,7 +143,20 @@ def bar_command_use(n: int) -> go.Figure:
                 size = 35, 
                 color = colors["text_base"]
                 ),
-            )
+            ),
+
+        'xaxis': dict(
+            categoryorder = 'array',
+            categoryarray = list(df["command"].value_counts().index)
+        ),
+
+        "legend" : dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            itemclick=False)
         })
     return fig
 
@@ -155,7 +179,7 @@ app.layout = html.Div([
 
     dcc.Interval(
         id = "interval-counter",
-        interval = 1000, # in milliseconds
+        interval = 3 * 1000, # in milliseconds
         n_intervals = 0
     ),
 

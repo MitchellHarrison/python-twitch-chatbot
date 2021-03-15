@@ -82,7 +82,6 @@ stream_data = get_stream_data(CHANNEL, CLIENT_ID, bearer)
 is_live = stream_data["type"] == "live"
 broadcaster_id = stream_data["user_id"]
 current_min = datetime.now().minute
-print(current_min)
 
 while is_live:
     if current_min != datetime.now().minute:
@@ -105,3 +104,6 @@ while is_live:
         }
         write_live_data(live_entry)
         print("entry made!")
+
+        stream_data = get_stream_data(CHANNEL, CLIENT_ID, bearer) 
+        is_live = stream_data["type"] == "live"

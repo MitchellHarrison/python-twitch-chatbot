@@ -18,9 +18,10 @@ def db_setup():
     conn = sqlite3.connect("data.db")
     cursor = conn.cursor()
     with conn:
-        cursor.execute("CREATE TABLE IF NOT EXISTS command_use (time text, user text, command text);")
+        cursor.execute("CREATE TABLE IF NOT EXISTS command_use (time text, user text, command text, is_custom number);")
         cursor.execute("CREATE TABLE IF NOT EXISTS chat_messages (time text, user text);")
         cursor.execute("CREATE TABLE IF NOT EXISTS text_commands (command text, message text);")
+        cursor.execute("CREATE TABLE IF NOT EXISTS false_commands (time text, user text, command text);")
     cursor.close()
     conn.close()
 

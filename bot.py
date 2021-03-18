@@ -5,11 +5,11 @@ import command
 from datetime import datetime
 
 class Bot():
-    def __init__(self, server: str, port: int, token: str, username: str, channel: str, text_commands: dict):
+    def __init__(self, server: str, port: int, oauth_token: str, bot_name: str, channel: str, text_commands: dict):
         self.server = server
         self.port = port
-        self.oauth_token = token
-        self.username = username
+        self.oauth_token = oauth_token
+        self.bot_name = bot_name
         self.channel = channel
         self.commands = {s.command_name: s for s in (c(self) for c in command.CommandBase.__subclasses__())}
         self.text_commands = text_commands
@@ -20,7 +20,7 @@ class Bot():
         self.irc = socket.socket()
         self.irc.connect((self.server, self.port))
         self.irc_command(f"PASS oauth:{self.oauth_token}")
-        self.irc_command(f"NICK {self.username}")
+        self.irc_command(f"NICK {self.bot_name}")
         self.irc_command(f"JOIN #{self.channel}")        
         self.send_message(self.channel, "I AM ALIVE!!")
         self.check_for_messages()

@@ -1,16 +1,6 @@
-import os
 import sqlite3
-from dotenv import load_dotenv
 from bot import Bot
-
-load_dotenv("./credentials.env")
-CLIENT_ID = os.getenv("CLIENT_ID")
-OAUTH_TOKEN = os.getenv("OAUTH_TOKEN")
-BOT_NAME = os.getenv("BOT_NAME")
-CHANNEL = os.getenv("CHANNEL")
-SERVER = "irc.twitch.tv"
-PORT = 6667
-
+from environment import Environment
 
 # check for missing .db file or missing tables, and create them
 def db_setup():
@@ -39,7 +29,15 @@ def get_text_commands() -> dict:
 def main():
     db_setup()
     text_commands = get_text_commands()
-    bot = Bot(SERVER, PORT, OAUTH_TOKEN, BOT_NAME, CHANNEL, text_commands)
+    environment = Environment()
+    bot = Bot(
+        environment.irc_server,
+        environment.irc_port,
+        environment.oauth,
+        environment.bot_name,
+        environment.channel,
+        text_commands
+    )
     bot.connect_to_channel()
 
 

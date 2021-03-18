@@ -14,6 +14,7 @@ class Environment():
         self.irc_port = 6667
         self.irc_server = "irc.twitch.tv"
         self.bearer = self.get_bearer()
+        self.user_id = self.get_user_id()
 
     
     def get_bearer(self) -> str:
@@ -22,12 +23,21 @@ class Environment():
             "client_id" : self.client_id,
             "client_secret" : self.client_secret,
             "grant_type" : "client_credentials"
-        } 
+            }
         response = requests.post(url, params = params)
         data = json.loads(response.content)
         bearer = data["access_token"]
         return bearer
 
-    
-    def authorize(self) -> str:
-        url = "https://id.twitch.tv/oauth2/authorize"
+
+    def get_user_id(self) -> str:
+        url = f"https://api.twitch.tv/helix/users?login={self.channel}"
+        headers = {
+            "client_id": self.client_id,
+            "authorization": f"Bearer {self.bearer}"
+            }
+        response = requests.get(url, headers = headers)
+        data = json.loads(response.content)
+        print(json.dumps(data, indent=4))
+        user_id = data["data"][0]["id"]
+        return user_id

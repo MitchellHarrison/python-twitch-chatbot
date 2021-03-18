@@ -74,6 +74,8 @@ def db_setup(channel: str, client_id: str, bearer: str, user_id: int, follow_pag
 
 
 def get_stream_data(channel: str, client_id: str, bearer: str) -> dict:
+    print(bearer)
+    print(client_id)
     url = f"https://api.twitch.tv/helix/streams/?user_login={channel}"
     headers = {
         "client-id" : client_id,
@@ -81,6 +83,7 @@ def get_stream_data(channel: str, client_id: str, bearer: str) -> dict:
     }
     response = requests.get(url, headers = headers)
     data = json.loads(response.content)
+    print(json.dumps(data, indent = 4))
     return data["data"][0]
 
 
@@ -158,11 +161,7 @@ def main():
     channel = environment.channel
     client_id = environment.client_id
     bearer = environment.bearer
-    stream_data = get_stream_data(channel, client_id, bearer)
-
-    is_live = stream_data["type"] == "live"
-    user_id = stream_data["user_id"]
-
+    user_id = environment.user_id
     current_min = datetime.now().minute
 
     follow_data = get_follow_data(channel, client_id, bearer, user_id)
@@ -178,7 +177,8 @@ def main():
         follow_pages_required
     )
 
-    # get_subscribers("mitchsrobot", client_id, bearer, user_id)
+    stream_data = get_stream_data(channel, client_id, bearer)
+    is_live = stream_data["type"] == "live"
 
     while True:
         try:

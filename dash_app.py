@@ -22,6 +22,14 @@ chart_layout = {
     "height" : 700
 }
 
+
+def get_chat_messages():
+    conn = sqlite3.connect("data.db")
+    with conn:
+        df = pd.read_sql("SELECT * FROM chat_messages", conn)
+    return df
+
+
 def build_title():
     return html.Div(id = "title-banner", children = [
         html.H1("Twitch Data Visualization Dashboard", id="app-title"),
@@ -33,13 +41,6 @@ def build_title():
         ),  
         html.A("Built Live by Mitch Harrison", id = "app-subtitle", href = "https://twitch.tv/MitchsWorkshop")
     ])
-
-
-def get_chat_messages():
-    conn = sqlite3.connect("data.db")
-    with conn:
-        df = pd.read_sql("SELECT * FROM chat_messages", conn)
-    return df
 
 
 def build_chatter_slider():
@@ -74,7 +75,67 @@ def build_footer():
     ])
 
 
-# top chatters bar graph
+def build_pct_chat_following():
+    conn = sqlite3.connect("data.db")
+    cursor = conn.cursor()
+
+    with conn:
+        cursor.execute("SELECT username FROM followers")
+        followers = [f[0] for f in cursor.fetchall()]
+        cursor.execute("SELECT user FROM chat_messages")
+
+        # get unique chatters
+        chatters = [c[0] for c in list(set(cursor.fetchall()))]
+        chatters_not_following = len((set(chatters) - set(followers)))
+        pct_not_followed = round(chatters_not_following / len(chatters) * 100, 1)
+
+    return html.Div(
+        id = "pct-chat-following",
+        children = [
+            html.H2(
+                id = "pct-following-display",
+                children = f"{pct_not_followed}%"
+            ),
+            html.P(
+                id = "chatters-not-following",
+                children = "of chatters aren't following"
+            )
+        ]
+    )
+
+
+### LAYOUT ###
+app.layout = html.Div([
+    dbc.Row(dbc.Col(build_title())),
+
+    dbc.Row(
+        dbc.Col(
+            build_pct_chat_following()
+        )
+    ),
+
+    dbc.Row(
+        dbc.Col(
+            build_chatter_slider(),
+            width = {"size":9, "offset":3}
+        )
+    ),
+
+    dbc.Row([
+        dbc.Col(dcc.Graph(id = "bar-top-commands"), width = 3),
+        dbc.Col(dcc.Graph(id = "bar-top-chatters"))
+    ]),
+
+    dcc.Interval(
+        id = "interval-counter",
+        interval = 3 * 1000, # in milliseconds
+        n_intervals = 0
+    ),
+
+    dbc.Row(dbc.Col(build_footer()))
+])
+
+
 @app.callback(
     Output(component_id="bar-top-chatters", component_property="figure"),
     [Input(component_id="top-chatter-number", component_property="value"),
@@ -156,35 +217,10 @@ def bar_command_use(n: int) -> go.Figure:
             y=1.02,
             xanchor="right",
             x=1,
-            itemclick=False)
+            itemclick = False,
+            itemdoubleclick = False)
         })
     return fig
-
-
-# start of app 
-app.layout = html.Div([
-    dbc.Row(dbc.Col(build_title())),
-
-    dbc.Row(
-        dbc.Col(
-            build_chatter_slider(),
-            width = {"size":9, "offset":3}
-        )
-    ),
-
-    dbc.Row([
-        dbc.Col(dcc.Graph(id = "bar-top-commands"), width = 3),
-        dbc.Col(dcc.Graph(id = "bar-top-chatters"))
-    ]),
-
-    dcc.Interval(
-        id = "interval-counter",
-        interval = 3 * 1000, # in milliseconds
-        n_intervals = 0
-    ),
-
-    dbc.Row(dbc.Col(build_footer()))
-])
 
 
 if __name__ == '__main__':

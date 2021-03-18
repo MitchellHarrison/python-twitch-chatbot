@@ -23,3 +23,9 @@ a, #title-banner, #discord-footer {
     padding: 0px;
     margin: 0px;
 }
+
+#pct-following-display {
+    color : #48C0F3;
+    font-size: 40px;
+    margin: 0;
+}

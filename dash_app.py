@@ -2,13 +2,11 @@ import dash
 import sqlite3
 import dash_core_components as dcc 
 import dash_html_components as html 
-import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import pandas as pd
 from dash.dependencies import Input, Output
 
-external_stylesheets = ["https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap-grid.min.css"]
-app = dash.Dash(__name__, external_stylesheets = external_stylesheets)
+app = dash.Dash(__name__)
 
 # these colors aren't defined in CSS because graphs don't accept CSS styling
 colors = {"background" : "#05101E", "text_base" : "#E0E0E0"}
@@ -30,17 +28,73 @@ def get_chat_messages():
     return df
 
 
-def build_title():
-    return html.Div(id = "title-banner", children = [
-        html.H1("Twitch Data Visualization Dashboard", id="app-title"),
-        html.Img(
-            id = "twitch-icon", 
-            alt = "twitch icon", 
-            src = app.get_asset_url("twitch_icon.png"),
-            height = 20
-        ),  
-        html.A("Built Live by Mitch Harrison", id = "app-subtitle", href = "https://twitch.tv/MitchsWorkshop")
-    ])
+def build_title_banner():
+    return html.Div(
+        id = "title-banner", 
+        children = [
+            html.H5(
+                id="app-title",
+                children = "Twitch Data Visualization Dashboard"
+            ),
+            html.Img(
+                id = "twitch-icon", 
+                alt = "twitch icon", 
+                src = app.get_asset_url("twitch_icon.png"),
+                height = 20
+            ),  
+            html.A(
+                id = "app-subtitle", 
+                href = "https://twitch.tv/MitchsWorkshop",
+                children = "Built Live by Mitch Harrison"
+            )
+        ])
+
+
+def build_all_tabs():
+    return html.Div(
+        id = "tab-container", 
+        children = [
+            dcc.Tabs(
+                id = "all-tabs", 
+                className = "app-tabs",
+                value = "tab-chat",
+                children = [
+                    dcc.Tab(
+                        id = "tab-chat",
+                        value = "tab-chat",
+                        className = "app-tab",
+                        label = "Chat",
+                        selected_className = "app-tab--selected"
+                    ),
+                    dcc.Tab(
+                        id = "tab-followers",
+                        value = "tab-followers",
+                        className = "app-tab",
+                        label = "Followers",
+                        selected_className = "app-tab--selected"
+                    ),
+                    dcc.Tab(
+                        id = "tab-stream-summary",
+                        value = "tab-stream-summary",
+                        className = "app-tab",
+                        label = "Stream Summary",
+                        selected_className = "app-tab--selected"
+                    )
+                ])
+            ])
+
+
+def build_tab_chat():
+    return [
+        html.Div(
+            id = "chat-tab", 
+            children = [
+                    build_pct_chat_following(),
+                    build_chatter_slider(),
+                    dcc.Graph(id = "bar-top-commands"),
+                    dcc.Graph(id = "bar-top-chatters"),
+            ])
+    ]
 
 
 def build_chatter_slider():
@@ -53,8 +107,7 @@ def build_chatter_slider():
                 min = 1,
                 max = slider_max,
                 value = slider_max // 2,
-                marks = {i : str(i) for i in range(1,slider_max, step)},
-                # step = step
+                marks = {i : str(i) for i in range(1,slider_max, step)}
             )
 
 
@@ -63,7 +116,7 @@ def build_footer():
         html.Span(id = "discord-icon", children = [
             html.Img(
                 alt = "discord icon",
-                src = app.get_asset_url("discord_icon.png") ,
+                src = app.get_asset_url("discord_icon.png"),
                 height = 22
             )
         ]),
@@ -91,13 +144,16 @@ def build_pct_chat_following():
 
     return html.Div(
         id = "pct-chat-following",
+        className = "text-insight",
         children = [
             html.H2(
                 id = "pct-following-display",
+                className = "text-insight-value",
                 children = f"{pct_not_followed}%"
             ),
             html.P(
                 id = "chatters-not-following",
+                className = "text-insight-subtext",
                 children = "of chatters aren't following"
             )
         ]
@@ -105,35 +161,41 @@ def build_pct_chat_following():
 
 
 ### LAYOUT ###
-app.layout = html.Div([
-    dbc.Row(dbc.Col(build_title())),
+app.layout = html.Div(
+    id = "master-container", 
+    children = [
+        dcc.Interval(
+            id = "interval-counter",
+            interval = 3 * 1000, # in milliseconds
+            n_intervals = 0
+            ),
+        build_title_banner(),
+        build_all_tabs(),
+        html.Div(
+            id = "app-container", 
+            children = [
+                # build_tab_chat(),
+                html.Div(id = "active-tab"),
+                build_footer()
+            ])
+        ])
 
-    dbc.Row(
-        dbc.Col(
-            build_pct_chat_following()
-        )
-    ),
 
-    dbc.Row(
-        dbc.Col(
-            build_chatter_slider(),
-            width = {"size":9, "offset":3}
-        )
-    ),
-
-    dbc.Row([
-        dbc.Col(dcc.Graph(id = "bar-top-commands"), width = 3),
-        dbc.Col(dcc.Graph(id = "bar-top-chatters"))
-    ]),
-
-    dcc.Interval(
-        id = "interval-counter",
-        interval = 3 * 1000, # in milliseconds
-        n_intervals = 0
-    ),
-
-    dbc.Row(dbc.Col(build_footer()))
-])
+@app.callback(
+    [Output(component_id="active-tab", component_property="children")],
+    [Input(component_id="all-tabs", component_property="value")]
+)
+def build_tab(tab: str):
+    if tab == "tab-chat":
+        return build_tab_chat()
+    return [
+        html.Div(
+            children = [
+                html.P(
+                    "This isn't the chat tab"
+                )
+            ])
+    ]
 
 
 @app.callback(

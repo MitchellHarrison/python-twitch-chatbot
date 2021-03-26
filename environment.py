@@ -24,7 +24,7 @@ class Environment():
             "client_secret" : self.client_secret,
             "grant_type" : "client_credentials"
             }
-        response = requests.post(url, params = params)
+        response = requests.post(url, params = params, timeout=3)
         data = json.loads(response.content)
         bearer = data["access_token"]
         return bearer
@@ -33,11 +33,10 @@ class Environment():
     def get_user_id(self) -> str:
         url = f"https://api.twitch.tv/helix/users?login={self.channel}"
         headers = {
-            "client_id": self.client_id,
+            "client-id": self.client_id,
             "authorization": f"Bearer {self.bearer}"
             }
         response = requests.get(url, headers = headers)
         data = json.loads(response.content)
-        print(json.dumps(data, indent=4))
         user_id = data["data"][0]["id"]
         return user_id

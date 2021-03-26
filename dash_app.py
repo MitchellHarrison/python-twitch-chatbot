@@ -9,7 +9,13 @@ from dash.dependencies import Input, Output
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
 
 # these colors aren't defined in CSS because graphs don't accept CSS styling
-colors = {"background" : "#05101E", "text_base" : "#E0E0E0"}
+colors = {
+    "background" : "#05101E", 
+    "text_base" : "#E0E0E0",
+    "chart_highlight_blue" : "#0597DC",
+    "chart_deep_gray" : "#303030",
+    "chart_light_gray" : "#6C6C6C"
+}
 chart_layout = {
     "font" : dict(
         family = "poppins",
@@ -109,14 +115,16 @@ def bar_command_use(n: int) -> go.Figure:
         y = data_custom["count"],
         name = "Custom",
         text = data_custom["count"],
-        textposition = "outside"
+        textposition = "outside",
+        marker_color = colors["chart_deep_gray"]
     )
     trace2 = go.Bar(
         x = data_hard_coded["command"],
         y = data_hard_coded["count"],
         name = "Default",
         text = data_hard_coded["count"],
-        textposition = "outside"
+        textposition = "outside",
+        marker_color = colors["chart_light_gray"]
     )
 
     fig = go.Figure(data = [trace1, trace2], layout = chart_layout)
@@ -162,7 +170,9 @@ def bar_top_chatters(num_chatters: int, n: int) -> go.Figure:
         x = trace_data["user"],
         y = trace_data["message_count"],
         text = trace_data["message_count"],
-        textposition = "outside"
+        textposition = "outside",
+        marker_color = [colors["chart_highlight_blue"]] 
+            + [colors["chart_deep_gray"] for _ in range(num_chatters-1)]
     )
 
     fig = go.Figure(data = [trace], layout = chart_layout)

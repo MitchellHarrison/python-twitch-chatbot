@@ -222,7 +222,7 @@ def build_pct_chat_following():
         cursor.execute("SELECT DISTINCT user FROM chat_messages")
         chatters = [u[0] for u in cursor.fetchall()]
         chatters_not_following = [c for c in chatters if c not in followers]
-        pct_not_followed = round(chatters_not_following / len(chatters) * 100, 1)
+        pct_not_followed = round(len(chatters_not_following) / len(chatters) * 100, 1)
 
     return html.Div(
         id = "pct-chat-following",

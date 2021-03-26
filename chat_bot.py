@@ -9,7 +9,7 @@ def db_setup():
     cursor = conn.cursor()
     with conn:
         cursor.execute("CREATE TABLE IF NOT EXISTS command_use (time text, user text, command text, is_custom number);")
-        cursor.execute("CREATE TABLE IF NOT EXISTS chat_messages (time text, user text);")
+        cursor.execute("CREATE TABLE IF NOT EXISTS chat_messages (time text, user text, message text);")
         cursor.execute("CREATE TABLE IF NOT EXISTS text_commands (command text, message text);")
         cursor.execute("CREATE TABLE IF NOT EXISTS false_commands (time text, user text, command text);")
     cursor.close()
@@ -36,6 +36,8 @@ def main():
         environment.oauth,
         environment.bot_name,
         environment.channel,
+        environment.user_id,
+        environment.client_id,
         text_commands
     )
     bot.connect_to_channel()

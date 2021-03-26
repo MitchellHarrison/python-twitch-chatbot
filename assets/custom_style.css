@@ -1,5 +1,5 @@
 html {
-    background-color: #0C0B1D;
+    background-color: #202128;
     font-family: poppins;
 }
 
@@ -23,8 +23,8 @@ body {
     display: flex;
     flex-direction: column;
     padding: 0 6rem;
-    border: 10px red solid;
-    background-color: rgb(12, 11, 22);
+    /* border: 10px red solid; */
+    background-color: none;
 }
 
 a, #title-banner {
@@ -37,7 +37,8 @@ a, #title-banner {
 
 #app-title {
     text-align: center;
-
+    font-size: 70px;
+    margin: 0;
 }
 
 #tab-container {
@@ -63,8 +64,14 @@ a, #title-banner {
     text-align: left;
 }
 
+.text-insight-value {
+    text-align: left;
+    color: #0597DC; 
+}
+
 .text-insight-subtext {
     margin: 0;
+    color: #AAAAAA;
 }
 
 #discord-icon {

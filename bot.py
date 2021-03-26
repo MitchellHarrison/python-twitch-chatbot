@@ -5,12 +5,14 @@ import command
 from datetime import datetime
 
 class Bot():
-    def __init__(self, server: str, port: int, oauth_token: str, bot_name: str, channel: str, text_commands: dict):
+    def __init__(self, server: str, port: int, oauth_token: str, bot_name: str, channel: str, user_id: str, client_id: str, text_commands: dict):
         self.server = server
         self.port = port
         self.oauth_token = oauth_token
         self.bot_name = bot_name
         self.channel = channel
+        self.user_id = user_id
+        self.client_id = client_id
         self.commands = {s.command_name: s for s in (c(self) for c in command.CommandBase.__subclasses__())}
         self.text_commands = text_commands
 
@@ -40,6 +42,7 @@ class Bot():
     def check_for_messages(self):
         while True:
             messages = self.irc.recv(1024).decode()
+            print(">" + messages)
 
             # respond to pings from Twitch
             if messages.startswith("PING"):
@@ -57,22 +60,22 @@ class Bot():
             
             # pull user and text from each message
             user = re.search(pat_message, message).group("user")
-            text = re.search(pat_message, message).group("text")
+            message = re.search(pat_message, message).group("text")
 
             # respond to server pings
-            if text.lower().startswith("ping"):
+            if message.lower().startswith("ping"):
                 print("ping received")
                 self.irc_command("PONG")
                 print("pong sent")
 
             # check for commands being used
-            if text.startswith("!"):
-                command = text.split()[0]
+            if message.startswith("!"):
+                command = message.split()[0].lower()
                 if command not in self.text_commands and command not in self.commands:
                     self.store_wrong_command(user, command)
                 else:
-                    self.execute_command(user, command, text)
-            self.store_message_data(user)
+                    self.execute_command(user, command, message)
+            self.store_message_data(user, message)
 
         except AttributeError:
             pass
@@ -94,15 +97,16 @@ class Bot():
         
 
     # insert data to SQLite db
-    def store_message_data(self, user: str):
+    def store_message_data(self, user: str, message: str):
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
         entry = {
             "time" : str(datetime.now()),
-            "user" : user
+            "user" : user,
+            "message" : message
         }
         with conn:
-            cursor.execute("INSERT INTO chat_messages (time, user) VALUES (:time, :user)", entry)
+            cursor.execute("INSERT INTO chat_messages (time, user, message) VALUES (:time, :user, :message)", entry)
         cursor.close()
         conn.close()
 
@@ -113,7 +117,7 @@ class Bot():
             "time" : str(datetime.now()),
             "user" : user,
             "command" : command,
-            "is_custom" : str(is_custom)
+            "is_custom" : is_custom
         }
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()

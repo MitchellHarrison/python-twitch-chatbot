@@ -75,6 +75,13 @@ def build_all_tabs():
                         selected_className = "app-tab--selected"
                     ),
                     dcc.Tab(
+                        id = "tab-vod-analysis",
+                        value = "tab-vod-analysis",
+                        className = "app-tab",
+                        label = "VOD Analysis",
+                        selected_className = "app-tab--selected"
+                    ),
+                    dcc.Tab(
                         id = "tab-followers",
                         value = "tab-followers",
                         className = "app-tab",
@@ -90,6 +97,186 @@ def build_all_tabs():
                     )
                 ])
             ])
+
+
+def build_tab_chat() -> list:
+    return [
+        html.Div(
+            id = "chat-tab", 
+            children = [
+                    build_pct_chat_following(),
+                    dcc.Dropdown(
+                        id = "chat-graph-dropdown",
+                        options = [
+                            {"label": "Top Chatters - All Time", "value": "top chatters"},
+                            {"label": "Total Command Use - All Time", "value": "command use"}
+                        ],
+                        value = "top chatters"
+                    ),
+                    html.Div(id="chat-tab-bar-card")
+                ]
+            )
+        ]
+
+
+def build_tab_followers() -> list:
+    return [
+        html.Div(
+            children = [
+                html.P(
+                    "This is the followers tab, where follower data will be visualized."
+                )
+            ],
+            style = {
+                "color": "white",
+                "font-size": "2rem"
+            }
+        )
+    ]
+
+
+def build_tab_vod_analysis() -> list:
+    return [
+        html.Div(
+            children = [
+                html.P(
+                    "This is where VOD analysis will take place, with most recent broadcast embedded."
+                )
+            ],
+            style = {
+                "color": "white",
+                "font-size": "2rem"
+            }
+        )
+    ]
+
+
+def build_tab_stream_summary() -> list:
+    return [
+        html.Div(
+            children = [
+                html.P(
+                    "This is where the most recent stream's summary data will be."
+                )
+            ],
+            style = {
+                "color": "white",
+                "font-size": "2rem"
+            }
+        )
+    ]
+
+
+def build_chatter_slider() -> dcc.Slider:
+    df = get_chat_messages()
+    num_chatters = len(df["user"].unique())
+    slider_max = 50 if num_chatters > 50 else num_chatters
+    # step = slider_max // 15
+    return dcc.Slider(
+                id = "top-chatter-number",
+                min = 1,
+                max = slider_max,
+                value = slider_max // 2,
+                marks = {i : str(i) for i in range(1,slider_max)}
+            )
+
+
+def build_pct_chat_following() -> html.Div:
+    conn = sqlite3.connect("data.db")
+    cursor = conn.cursor()
+
+    with conn:
+        cursor.execute("SELECT DISTINCT username FROM followers")
+        followers = [u[0] for u in cursor.fetchall()]
+        cursor.execute("SELECT DISTINCT user FROM chat_messages")
+        chatters = [u[0] for u in cursor.fetchall()]
+        chatters_not_following = [c for c in chatters if c not in followers]
+        pct_not_followed = round(len(chatters_not_following) / len(chatters) * 100, 1)
+
+    return html.Div(
+        id = "pct-chat-following",
+        className = "text-insight",
+        children = [
+            html.H2(
+                id = "pct-following-display",
+                className = "text-insight-value",
+                children = f"{pct_not_followed}%"
+            ),
+            html.P(
+                id = "chatters-not-following",
+                className = "text-insight-subtext",
+                children = "of chatters aren't following"
+            )
+        ]
+    )
+
+
+def build_footer() -> html.Div:
+    return html.Div(id = "discord-footer", children = [
+        html.Span(id = "discord-icon", children = [
+            html.Img(
+                alt = "discord icon",
+                src = app.get_asset_url("discord_icon.png"),
+                height = 22
+            )
+        ]),
+        html.A(
+            "Join the Discord for discussion!", 
+            id = "discord-cta", 
+            href = "https://discord.gg/7nefPK6"
+        )
+    ])
+
+
+### LAYOUT ###
+app.layout = html.Div(
+    id = "master-container", 
+    children = [
+        dcc.Interval(
+            id = "interval-counter",
+            interval = 1 * 1000, # in milliseconds
+            n_intervals = 0
+            ),
+        build_title_banner(),
+        build_all_tabs(),
+        html.Div(
+            id = "app-container", 
+            children = [
+                html.Div(id = "active-tab"),
+                build_footer()
+            ]
+        )
+    ]
+)
+
+
+@app.callback(
+    [Output(component_id="active-tab", component_property="children")],
+    [Input(component_id="all-tabs", component_property="value")]
+)
+def build_tab(tab: str) -> list:
+    if tab == "tab-chat":
+        return build_tab_chat()
+    elif tab == "tab-vod-analysis":
+        return build_tab_vod_analysis()
+    elif tab == "tab-followers":
+        return build_tab_followers()
+    else:
+        return build_tab_stream_summary()
+
+
+@app.callback(
+    Output(component_id="chat-tab-bar-card", component_property="children"),
+    [Input(component_id="chat-graph-dropdown", component_property="value")]
+)
+def build_bar_graph(title: str) -> list:
+    if title == "command use":
+        return [dcc.Graph(id="command-use-bar")]
+    elif title == "top chatters":
+        return [
+            build_chatter_slider(),
+            dcc.Graph(id="top-chatters-bar")
+        ]
 
 
 @app.callback(
@@ -187,137 +374,6 @@ def bar_top_chatters(num_chatters: int, n: int) -> go.Figure:
             )
         })
     return fig
-
-
-def build_tab_chat() -> list:
-    return [
-        html.Div(
-            id = "chat-tab", 
-            children = [
-                    build_pct_chat_following(),
-                    dcc.Dropdown(
-                        id = "chat-graph-dropdown",
-                        options = [
-                            {"label": "Top Chatters - All Time", "value": "top chatters"},
-                            {"label": "Total Command Use - All Time", "value": "command use"}
-                        ],
-                        value = "top chatters"
-                    ),
-                    html.Div(id="chat-tab-bar-card")
-            ])
-    ]
-
-
-def build_chatter_slider() -> dcc.Slider:
-    df = get_chat_messages()
-    num_chatters = len(df["user"].unique())
-    slider_max = 50 if num_chatters > 50 else num_chatters
-    # step = slider_max // 15
-    return dcc.Slider(
-                id = "top-chatter-number",
-                min = 1,
-                max = slider_max,
-                value = slider_max // 2,
-                marks = {i : str(i) for i in range(1,slider_max)}
-            )
-
-
-def build_pct_chat_following():
-    conn = sqlite3.connect("data.db")
-    cursor = conn.cursor()
-
-    with conn:
-        cursor.execute("SELECT DISTINCT username FROM followers")
-        followers = [u[0] for u in cursor.fetchall()]
-        cursor.execute("SELECT DISTINCT user FROM chat_messages")
-        chatters = [u[0] for u in cursor.fetchall()]
-        chatters_not_following = [c for c in chatters if c not in followers]
-        pct_not_followed = round(len(chatters_not_following) / len(chatters) * 100, 1)
-
-    return html.Div(
-        id = "pct-chat-following",
-        className = "text-insight",
-        children = [
-            html.H2(
-                id = "pct-following-display",
-                className = "text-insight-value",
-                children = f"{pct_not_followed}%"
-            ),
-            html.P(
-                id = "chatters-not-following",
-                className = "text-insight-subtext",
-                children = "of chatters aren't following"
-            )
-        ]
-    )
-
-
-def build_footer():
-    return html.Div(id = "discord-footer", children = [
-        html.Span(id = "discord-icon", children = [
-            html.Img(
-                alt = "discord icon",
-                src = app.get_asset_url("discord_icon.png"),
-                height = 22
-            )
-        ]),
-        html.A(
-            "Join the Discord for discussion!", 
-            id = "discord-cta", 
-            href = "https://discord.gg/7nefPK6"
-        )
-    ])
-
-
-### LAYOUT ###
-app.layout = html.Div(
-    id = "master-container", 
-    children = [
-        dcc.Interval(
-            id = "interval-counter",
-            interval = 1 * 1000, # in milliseconds
-            n_intervals = 0
-            ),
-        build_title_banner(),
-        build_all_tabs(),
-        html.Div(
-            id = "app-container", 
-            children = [
-                html.Div(id = "active-tab"),
-                build_footer()
-            ])
-        ])
-
-
-@app.callback(
-    [Output(component_id="active-tab", component_property="children")],
-    [Input(component_id="all-tabs", component_property="value")]
-)
-def build_tab(tab: str):
-    if tab == "tab-chat":
-        return build_tab_chat()
-    return [
-        html.Div(
-            children = [
-                html.P(
-                    "This isn't the chat tab"
-                )
-            ])
-    ]
-
-
-@app.callback(
-    Output(component_id="chat-tab-bar-card", component_property="children"),
-    [Input(component_id="chat-graph-dropdown", component_property="value")]
-)
-def build_bar_graph(title: str):
-    if title == "command use":
-        return [dcc.Graph(id="command-use-bar")]
-    elif title == "top chatters":
-        return [
-            build_chatter_slider(),
-            dcc.Graph(id="top-chatters-bar")
-        ]
 
 
 if __name__ == '__main__':

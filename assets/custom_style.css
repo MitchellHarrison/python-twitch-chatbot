@@ -23,8 +23,8 @@ body {
     display: flex;
     flex-direction: column;
     padding: 0 6rem;
-    /* border: 10px red solid; */
-    background-color: none;
+    background-color: #030B14;
+    box-shadow: 0px 0px 2.5rem rgb(0,0,0,0.6);
 }
 
 a, #title-banner {

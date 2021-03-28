@@ -1,10 +1,15 @@
+import os
 import dash 
 import sqlite3
 import dash_core_components as dcc 
 import dash_html_components as html 
 import plotly.graph_objects as go
 import pandas as pd
+from datetime import datetime
 from dash.dependencies import Input, Output
+
+if not os.path.exists("visualizations"):
+    os.mkdir("visualizations")
 
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
 
@@ -24,11 +29,27 @@ chart_layout = {
     "paper_bgcolor" : "rgba(0,0,0,0)",
     "plot_bgcolor" : "rgba(0,0,0,0)",
     "height" : 700,
-    "yaxis" : dict(showgrid = False) # nice
+    "yaxis" : dict(showgrid = False)
 }
 
 
-def get_chat_messages():
+def get_commands() -> pd.Series:
+    conn = sqlite3.connect("data.db")
+    with conn:
+        s = pd.read_sql("SELECT DISTINCT(command) FROM command_use", conn)
+    conn.close()
+    return s["command"]
+
+
+def get_chatters() -> pd.Series:
+    conn = sqlite3.connect("data.db")
+    with conn:
+        s = pd.read_sql("SELECT user FROM chat_messages", conn)
+    conn.close()
+    return s["user"]
+
+
+def get_chat_messages() -> pd.DataFrame:
     conn = sqlite3.connect("data.db")
     with conn:
         df = pd.read_sql("SELECT * FROM chat_messages", conn)
@@ -58,9 +79,9 @@ def build_title_banner():
         ])
 
 
-def build_all_tabs():
+def build_all_tabs() -> html.Div:
     return html.Div(
-        id = "tab-container", 
+        id = "tabs-container", 
         children = [
             dcc.Tabs(
                 id = "all-tabs", 
@@ -99,21 +120,43 @@ def build_all_tabs():
             ])
 
 
+def build_chat_text_insights() -> html.Div:
+    return html.Div(
+        id = "chat-text-insights",
+        className = "text-insight-card",
+        children = [
+            html.Div(
+                id = "chat-text-insight-1",
+                children = [
+                    build_pct_chat_following()
+                ]
+            )
+        ]
+    )
+
+
 def build_tab_chat() -> list:
     return [
         html.Div(
-            id = "chat-tab", 
+            id = "chat-tab",
+            className = "tab-container",  
             children = [
-                    build_pct_chat_following(),
-                    dcc.Dropdown(
-                        id = "chat-graph-dropdown",
-                        options = [
-                            {"label": "Top Chatters - All Time", "value": "top chatters"},
-                            {"label": "Total Command Use - All Time", "value": "command use"}
-                        ],
-                        value = "top chatters"
-                    ),
-                    html.Div(id="chat-tab-bar-card")
+                build_chat_text_insights(),
+                html.Div(
+                    id = "chat-main-viz-container",
+                    children = [
+                        dcc.Dropdown(
+                            id = "chat-graph-dropdown",
+                            className = "viz-select-dropdown",
+                            options = [
+                                {"label": "Top Chatters - All Time", "value": "top chatters"},
+                                {"label": "Total Command Use - All Time", "value": "command use"}
+                                ],
+                            value = "top chatters"
+                            ),
+                        html.Div(id="chat-tab-bar-card")
+                        ]
+                    )
                 ]
             )
         ]
@@ -167,18 +210,48 @@ def build_tab_stream_summary() -> list:
     ]
 
 
-def build_chatter_slider() -> dcc.Slider:
-    df = get_chat_messages()
-    num_chatters = len(df["user"].unique())
-    slider_max = 50 if num_chatters > 50 else num_chatters
-    # step = slider_max // 15
+def build_bar_slider(series: pd.Series, max_values=25) -> dcc.Slider:
+    num_chatters = len(series)
+    slider_max = max_values if num_chatters > max_values else num_chatters
     return dcc.Slider(
-                id = "top-chatter-number",
+                id = "bar-xaxis-slider",
                 min = 1,
                 max = slider_max,
                 value = slider_max // 2,
                 marks = {i : str(i) for i in range(1,slider_max)}
             )
+
+
+def build_radio_toggle_grid() -> dcc.RadioItems:
+    return dcc.RadioItems(
+        id = "bar-radio-toggle-grid",
+        options = [
+            {"label": "Enable Gridlines", "value": "True"},
+            {"label": "Disable Gridlines", "value": "False"}
+        ],
+        value = "False",
+        labelStyle = {"display": "inline-block"}
+    )
+
+
+def build_radio_toggle_hues() -> dcc.RadioItems:
+    return dcc.RadioItems(
+        id = "bar-radio-toggle-hues",
+        options = [
+            {"label": "Enable Hue Separation", "value": "True"},
+            {"label": "Disable Hue Separation", "value": "False"}
+        ],
+        value = "True",
+        labelStyle = {"display": "inline-block"}
+    )
+
+
+def build_download_button() -> html.Button:
+    return html.Button(
+        "Download Graph",
+        id = "download-button",
+        n_clicks = 0
+    )
 
 
 def build_pct_chat_following() -> html.Div:
@@ -242,10 +315,10 @@ app.layout = html.Div(
         html.Div(
             id = "app-container", 
             children = [
-                html.Div(id = "active-tab"),
-                build_footer()
+                html.Div(id = "active-tab")
             ]
-        )
+        ),
+        build_footer()
     ]
 )
 
@@ -271,31 +344,62 @@ def build_tab(tab: str) -> list:
 )
 def build_bar_graph(title: str) -> list:
     if title == "command use":
-        return [dcc.Graph(id="command-use-bar")]
+        return [
+            build_bar_slider(get_commands()),
+            build_radio_toggle_grid(),
+            build_radio_toggle_hues(),
+            build_download_button(),
+            dcc.Graph(id="command-use-bar", config={"staticPlot": True})
+        ]
     elif title == "top chatters":
         return [
-            build_chatter_slider(),
-            dcc.Graph(id="top-chatters-bar")
+            build_bar_slider(get_chatters()),
+            build_radio_toggle_grid(),
+            build_download_button(),
+            dcc.Graph(id="top-chatters-bar", config={"staticPlot": True})
         ]
 
 
 @app.callback(
     Output(component_id="command-use-bar", component_property="figure"),
-    [Input(component_id="interval-counter", component_property="n_intervals")]
+    [Input(component_id="bar-xaxis-slider", component_property="value"),
+    Input(component_id="bar-radio-toggle-hues", component_property="value"),
+    Input(component_id="bar-radio-toggle-grid", component_property="value"),
+    Input(component_id="download-button", component_property="n_clicks"),
+    Input(component_id="interval-counter", component_property="n_intervals")]
 )
-def bar_command_use(n: int) -> go.Figure:
+def bar_command_use(commands_displayed: int, hue_distinction: str, enable_gridlines: str, button_presses: int, interval: int) -> go.Figure:
     conn = sqlite3.connect("data.db")
     with conn:
         df = pd.read_sql("SELECT * FROM command_use", conn)
     conn.close()
     
-    data_custom = df[df["is_custom"]==True]
+    top_commands = list(df["command"].value_counts().head(commands_displayed).index)
+    in_top_commands = df["command"].isin(top_commands)
+
+    data_custom = df[in_top_commands & (df["is_custom"]==True)]
     data_custom = data_custom["command"].value_counts().reset_index()
     data_custom.columns = ["command", "count"]
 
-    data_hard_coded = df[df["is_custom"]==False]
+    data_hard_coded = df[in_top_commands & (df["is_custom"]==False)]
     data_hard_coded = data_hard_coded["command"].value_counts().reset_index()
     data_hard_coded.columns = ["command", "count"]
+
+    if enable_gridlines == "True":
+        toggle_grid = True
+    else:
+        toggle_grid = False
+
+    if hue_distinction == "True":
+        varied_hues= True
+    else:
+        varied_hues = False
+
+    hue1 = colors["chart_deep_gray"]
+    if varied_hues:
+        hue2 = colors["chart_light_gray"]
+    else:
+        hue2 = hue1
 
     trace1 = go.Bar(
         x = data_custom["command"],
@@ -303,7 +407,8 @@ def bar_command_use(n: int) -> go.Figure:
         name = "Custom",
         text = data_custom["count"],
         textposition = "outside",
-        marker_color = colors["chart_deep_gray"]
+        cliponaxis = False,
+        marker_color = hue1
     )
     trace2 = go.Bar(
         x = data_hard_coded["command"],
@@ -311,13 +416,16 @@ def bar_command_use(n: int) -> go.Figure:
         name = "Default",
         text = data_hard_coded["count"],
         textposition = "outside",
-        marker_color = colors["chart_light_gray"]
+        cliponaxis = False,
+        marker_color = hue2
     )
+
+    fig_title = f"Top {commands_displayed} Commands Used - All Time"
 
     fig = go.Figure(data = [trace1, trace2], layout = chart_layout)
     fig.update_layout({
         "title" : dict(
-            text = f"Top Commands Used - All Time",
+            text = fig_title,
             font = dict(
                 family = "poppins", 
                 size = 35, 
@@ -330,6 +438,8 @@ def bar_command_use(n: int) -> go.Figure:
             categoryarray = df["command"].value_counts().index
         ),
 
+        "yaxis" : dict(showgrid = toggle_grid),
+
         "legend" : dict(
             orientation="h",
             yanchor="bottom",
@@ -339,15 +449,22 @@ def bar_command_use(n: int) -> go.Figure:
             itemclick = False,
             itemdoubleclick = False)
         })
+
+    changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
+    if changed_id == "download-button.n_clicks":
+        file_name = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{fig_title.replace(' ', '_').lower()}"
+        fig.write_image(f"visualizations/{file_name}.png", width=1600, height=900)
     return fig
 
 
 @app.callback(
     Output(component_id="top-chatters-bar", component_property="figure"),
-    [Input(component_id="top-chatter-number", component_property="value"), 
+    [Input(component_id="bar-xaxis-slider", component_property="value"), 
+    Input(component_id="bar-radio-toggle-grid", component_property="value"),
+    Input(component_id="download-button", component_property="n_clicks"),
     Input(component_id="interval-counter", component_property="n_intervals")]
 )
-def bar_top_chatters(num_chatters: int, n: int) -> go.Figure:
+def bar_top_chatters(num_chatters: int, enable_gridlines: str, button_presses: int, interval: int) -> go.Figure:
     df = get_chat_messages()
     data = df["user"].value_counts().reset_index()
     data.columns = ["user", "message_count"]
@@ -358,21 +475,34 @@ def bar_top_chatters(num_chatters: int, n: int) -> go.Figure:
         y = trace_data["message_count"],
         text = trace_data["message_count"],
         textposition = "outside",
+        cliponaxis = False,
         marker_color = [colors["chart_highlight_blue"]] 
             + [colors["chart_deep_gray"] for _ in range(num_chatters-1)]
     )
 
+    if enable_gridlines == "True":
+        toggle_grid = True
+    else:
+        toggle_grid = False
+
+    fig_title = f"Top {num_chatters} Chatters - All Time"
     fig = go.Figure(data = [trace], layout = chart_layout)
     fig.update_layout({
         "title" : dict(
-            text = f"Top {num_chatters} Chatters - All Time",
+            text = fig_title,
             font = dict(
                 family = "poppins", 
                 size = 35, 
                 color = colors["text_base"]
                 )
-            )
+            ),
+        "yaxis": dict(showgrid = toggle_grid)
         })
+    
+    changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
+    if changed_id == "download-button.n_clicks":
+        file_name = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{fig_title.replace(' ', '_').lower()}"
+        fig.write_image(f"visualizations/{file_name}.png", width=1600, height=900)
     return fig
 
 

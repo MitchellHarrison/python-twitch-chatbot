@@ -42,7 +42,6 @@ class Bot():
     def check_for_messages(self):
         while True:
             messages = self.irc.recv(1024).decode()
-            print(">" + messages)
 
             # respond to pings from Twitch
             if messages.startswith("PING"):

@@ -2,7 +2,8 @@ import requests
 import random
 import json
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
+from dateutil import relativedelta
 from abc import ABC, abstractmethod
 
 class CommandBase(ABC):
@@ -247,19 +248,15 @@ class FollowAgeCommand(CommandBase):
         conn.close()
         
         follow_time = datetime.strptime(follow_time_str, "%Y-%m-%dT%H:%M:%SZ")
-        delta = datetime.now() - follow_time
-
-        years = delta.days // 365
-        days = delta.days - (years*365)
-        hours = delta.seconds // 3600
-        minutes = (delta.seconds - hours*3600) // 60
-        seconds = delta.seconds - (hours * 3600) - (minutes * 60)
+        now = datetime.now()
+        
+        delta = relativedelta.relativedelta(now, follow_time)
         follow_stats = {
-            "year" : years,
-            "day" : days,
-            "hour" : hours,
-            "minute" : minutes,
-            "second" : seconds
+            "year": delta.years,
+            "month": delta.months,
+            "day": delta.days,
+            "hour": delta.hours,
+            "minute": delta.minutes
         }
 
         message = f"@{user} has been following for"

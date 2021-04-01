@@ -125,14 +125,86 @@ def build_chat_text_insights() -> html.Div:
         id = "chat-text-insights",
         className = "text-insight-card",
         children = [
+            html.P(
+                id = "chat-text-insight-title",
+                className = "card-title",
+                children = "Quick Stats:"
+            ),
             html.Div(
-                id = "chat-text-insight-1",
+                id = "text-insight-container",
                 children = [
-                    build_pct_chat_following()
+                    html.Div(
+                        id = "chat-text-insight-1",
+                        children = [
+                            build_pct_chat_following_insight()
+                        ]
+                    ),
+                    html.Div(
+                        id = "chat-text-insight-2",
+                        children = [
+                            build_total_chatters_insight()
+                        ]
+                    ),
+                    html.Div(
+                        id = "chat-text-insight-2",
+                        children = [
+                            build_total_command_use_insight()
+                        ]
+                    )
                 ]
             )
         ]
     )
+
+
+def build_chat_viz_settings(plot_title) -> html.Div:
+    if plot_title == "top chatters":
+        return html.Div(
+            id = "chat-viz-settings",
+            className = "viz-settings-box",
+            children = [
+                html.P(
+                    id = "top-chatter-slider-label",
+                    className = "settings-label",
+                    children = "Chatters displayed:"
+                ),
+                build_bar_slider(get_chatters()),
+                html.P(
+                    id = "toggle-grid-label",
+                    className = "settings-label",
+                    children = "Grid Lines:"
+                ),
+                build_radio_toggle_grid(),
+                build_download_button()
+            ]
+        )
+
+    elif plot_title == "command use":
+        return html.Div(
+            id = "chat-viz-settings",
+            className = "viz-settings-box",
+            children = [
+                html.P(
+                    id = "chat-commands-slider-label",
+                    className = "settings-label",
+                    children = "Commands displayed:"
+                ),
+                build_bar_slider(get_commands()),
+                html.P(
+                    id = "toggle-grid-label",
+                    className = "settings-label",
+                    children = "Grid Lines:"
+                ),
+                build_radio_toggle_grid(),
+                html.P(
+                    id = "toggle-command-hue-label",
+                    className = "settings-label",
+                    children = "Vary Hue by Command Type:"
+                ),
+                build_radio_toggle_hues(),
+                build_download_button(),
+            ]
+        )
 
 
 def build_tab_chat() -> list:
@@ -181,15 +253,45 @@ def build_tab_followers() -> list:
 def build_tab_vod_analysis() -> list:
     return [
         html.Div(
+            id = "vod-tab-container",
+            className = "tab-container",
             children = [
-                html.P(
-                    "This is where VOD analysis will take place, with most recent broadcast embedded."
+                html.Div(
+                    id = "vod-card",
+                    children = [
+                        html.Div(
+                            id = "vod-container",
+                            children = [
+                                html.Iframe(
+                                    id = "vod",
+                                    width = 1280,
+                                    height = 720,
+                                    src = "https://player.twitch.tv/?mitchsworkshop&parent=localhost"    
+                                )
+                            ]
+                        ),
+                        # dcc.Graph(id = "vod-graph")
+                    ]
+                ),
+                html.Div(
+                    id = "vod-settings-card",
+                    children = [
+                        html.Div(
+                            id = "vod-settings",
+                            children = [
+                                html.P("Choose your viz"),
+                                dcc.Dropdown(
+                                    id = "vod-data-select-dropdown",
+                                    options = [
+                                        {"label": "Viewership", "value": "viewers-per-minute"},
+                                        {"label": "Chat Activity", "value": "chat-per-minute"}
+                                    ]
+                                )
+                            ]
+                        )
+                    ]
                 )
-            ],
-            style = {
-                "color": "white",
-                "font-size": "2rem"
-            }
+            ]
         )
     ]
 
@@ -218,7 +320,7 @@ def build_bar_slider(series: pd.Series, max_values=25) -> dcc.Slider:
                 min = 1,
                 max = slider_max,
                 value = slider_max // 2,
-                marks = {i : str(i) for i in range(1,slider_max)}
+                marks = {i : str(i) for i in range(1,slider_max) if i%5 == 0}
             )
 
 
@@ -226,8 +328,8 @@ def build_radio_toggle_grid() -> dcc.RadioItems:
     return dcc.RadioItems(
         id = "bar-radio-toggle-grid",
         options = [
-            {"label": "Enable Gridlines", "value": "True"},
-            {"label": "Disable Gridlines", "value": "False"}
+            {"label": "Enable", "value": "True"},
+            {"label": "Disable", "value": "False"}
         ],
         value = "False",
         labelStyle = {"display": "inline-block"}
@@ -238,8 +340,8 @@ def build_radio_toggle_hues() -> dcc.RadioItems:
     return dcc.RadioItems(
         id = "bar-radio-toggle-hues",
         options = [
-            {"label": "Enable Hue Separation", "value": "True"},
-            {"label": "Disable Hue Separation", "value": "False"}
+            {"label": "Enable", "value": "True"},
+            {"label": "Disable", "value": "False"}
         ],
         value = "True",
         labelStyle = {"display": "inline-block"}
@@ -250,11 +352,12 @@ def build_download_button() -> html.Button:
     return html.Button(
         "Download Graph",
         id = "download-button",
+        className = "download-graph-button",
         n_clicks = 0
     )
 
 
-def build_pct_chat_following() -> html.Div:
+def build_pct_chat_following_insight() -> html.Div:
     conn = sqlite3.connect("data.db")
     cursor = conn.cursor()
 
@@ -279,6 +382,58 @@ def build_pct_chat_following() -> html.Div:
                 id = "chatters-not-following",
                 className = "text-insight-subtext",
                 children = "of chatters aren't following"
+            )
+        ]
+    )
+
+
+def build_total_chatters_insight() -> html.Div:
+    conn = sqlite3.connect("data.db")
+    cursor = conn.cursor()
+    with conn:
+        cursor.execute("SELECT COUNT(DISTINCT(user)) FROM chat_messages")
+        num_chatters = cursor.fetchone()[0]
+    cursor.close()
+    conn.close()
+
+    return html.Div(
+        id = "number-of-chatters",
+        children = [
+            html.H2(
+                id = "number-of-chatters-display",
+                className = "text-insight-value",
+                children = str(num_chatters)
+            ),
+            html.P(
+                id = "total-chatters",
+                className = "text-insight-subtext",
+                children = "total chatters"
+            )
+        ]
+    )    
+
+
+def build_total_command_use_insight() -> html.Div:
+    conn = sqlite3.connect("data.db")
+    cursor = conn.cursor()
+    with conn:
+        cursor.execute("SELECT COUNT(ALL(command)) FROM command_use")
+        commands_used = cursor.fetchone()[0]
+    cursor.close()
+    conn.close()
+
+    return html.Div(
+        id = "total-commands-used",
+        children = [
+            html.H2(
+                id = "commands-used-display",
+                className = "text-insight-value",
+                children = str(commands_used)
+            ),
+            html.P(
+                id = "commands-used",
+                className = "text-insight-subtext",
+                children = "commands used"
             )
         ]
     )
@@ -343,20 +498,35 @@ def build_tab(tab: str) -> list:
     [Input(component_id="chat-graph-dropdown", component_property="value")]
 )
 def build_bar_graph(title: str) -> list:
-    if title == "command use":
+    if title == "top chatters":
         return [
-            build_bar_slider(get_commands()),
-            build_radio_toggle_grid(),
-            build_radio_toggle_hues(),
-            build_download_button(),
-            dcc.Graph(id="command-use-bar", config={"staticPlot": True})
+            html.Div(
+               id = "plot-and-settings-container",
+               className = "chat-plot-settings-container",
+               children = [
+                    build_chat_viz_settings(title),
+                    dcc.Graph(
+                        id="top-chatters-bar", 
+                        className = "chat-viz",
+                        config={"staticPlot": True}
+                    )
+               ] 
+            )
         ]
-    elif title == "top chatters":
+    elif title == "command use":
         return [
-            build_bar_slider(get_chatters()),
-            build_radio_toggle_grid(),
-            build_download_button(),
-            dcc.Graph(id="top-chatters-bar", config={"staticPlot": True})
+            html.Div(
+               id = "plot-and-settings-container",
+               className = "chat-plot-settings-container",
+               children = [
+                    build_chat_viz_settings(title),
+                    dcc.Graph(
+                        id="command-use-bar", 
+                        className = "chat-viz",
+                        config={"staticPlot": True}
+                    )   
+               ] 
+            )
         ]
 
 
@@ -503,6 +673,14 @@ def bar_top_chatters(num_chatters: int, enable_gridlines: str, button_presses: i
     if changed_id == "download-button.n_clicks":
         file_name = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{fig_title.replace(' ', '_').lower()}"
         fig.write_image(f"visualizations/{file_name}.png", width=1600, height=900)
+    return fig
+
+@app.callback(
+    Output(component_id="vod-graph", component_property="figure"),
+    [Input(component_id="interval-counter", component_property="n_intervals")]
+)
+def area_chatters_per_minute(n: int) -> go.Figure:
+    fig = go.Figure()
     return fig
 
 

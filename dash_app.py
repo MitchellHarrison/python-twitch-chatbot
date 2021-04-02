@@ -8,6 +8,7 @@ import pandas as pd
 from datetime import datetime
 from dash.dependencies import Input, Output
 
+# create data viz downloads folder
 if not os.path.exists("visualizations"):
     os.mkdir("visualizations")
 
@@ -80,6 +81,23 @@ def build_title_banner():
 
 
 def build_all_tabs() -> html.Div:
+
+    # current dash issue requires tab styles to be defined inline
+    TAB_STYLE = {
+        "background-color": "#030B14",
+        "border": "none",
+        "color": "#5F5F60",
+        "text-transform": "uppercase"
+    }
+
+    TAB_SELECTED_STYLE = {
+        "background-color": "#030B14",
+        "border": "none",
+        "border-bottom": "solid 3px #0597DC",
+        "color": "#5F5F60",
+        "text-transform": "uppercase"
+    }
+
     return html.Div(
         id = "tabs-container", 
         children = [
@@ -93,31 +111,41 @@ def build_all_tabs() -> html.Div:
                         value = "tab-chat",
                         className = "app-tab",
                         label = "Chat",
-                        selected_className = "app-tab--selected"
+                        selected_className = "app-tab--selected",
+                        style = TAB_STYLE,
+                        selected_style = TAB_SELECTED_STYLE
                     ),
                     dcc.Tab(
                         id = "tab-vod-analysis",
                         value = "tab-vod-analysis",
                         className = "app-tab",
                         label = "VOD Analysis",
-                        selected_className = "app-tab--selected"
+                        selected_className = "app-tab--selected",
+                        style = TAB_STYLE,
+                        selected_style = TAB_SELECTED_STYLE
                     ),
                     dcc.Tab(
                         id = "tab-followers",
                         value = "tab-followers",
                         className = "app-tab",
                         label = "Followers",
-                        selected_className = "app-tab--selected"
+                        selected_className = "app-tab--selected",
+                        style = TAB_STYLE,
+                        selected_style = TAB_SELECTED_STYLE
                     ),
                     dcc.Tab(
                         id = "tab-stream-summary",
                         value = "tab-stream-summary",
                         className = "app-tab",
                         label = "Stream Summary",
-                        selected_className = "app-tab--selected"
+                        selected_className = "app-tab--selected",
+                        style = TAB_STYLE,
+                        selected_style = TAB_SELECTED_STYLE
                     )
-                ])
-            ])
+                ]
+            )
+        ]
+    )
 
 
 def build_chat_text_insights() -> html.Div:
@@ -125,13 +153,20 @@ def build_chat_text_insights() -> html.Div:
         id = "chat-text-insights",
         className = "text-insight-card",
         children = [
-            html.P(
-                id = "chat-text-insight-title",
-                className = "card-title",
-                children = "Quick Stats:"
+            html.Div(
+                id = "chat-quick-stats-title-container",
+                className = "card-title-container",
+                children = [
+                    html.P(
+                        id = "chat-text-insight-title",
+                        className = "card-title",
+                        children = "Quick Stats:"
+                    )
+                ]
             ),
             html.Div(
-                id = "text-insight-container",
+                id = "chat-text-insights",
+                className = "text-insight-container",
                 children = [
                     html.Div(
                         id = "chat-text-insight-1",
@@ -146,7 +181,7 @@ def build_chat_text_insights() -> html.Div:
                         ]
                     ),
                     html.Div(
-                        id = "chat-text-insight-2",
+                        id = "chat-text-insight-3",
                         children = [
                             build_total_command_use_insight()
                         ]
@@ -155,56 +190,6 @@ def build_chat_text_insights() -> html.Div:
             )
         ]
     )
-
-
-def build_chat_viz_settings(plot_title) -> html.Div:
-    if plot_title == "top chatters":
-        return html.Div(
-            id = "chat-viz-settings",
-            className = "viz-settings-box",
-            children = [
-                html.P(
-                    id = "top-chatter-slider-label",
-                    className = "settings-label",
-                    children = "Chatters displayed:"
-                ),
-                build_bar_slider(get_chatters()),
-                html.P(
-                    id = "toggle-grid-label",
-                    className = "settings-label",
-                    children = "Grid Lines:"
-                ),
-                build_radio_toggle_grid(),
-                build_download_button()
-            ]
-        )
-
-    elif plot_title == "command use":
-        return html.Div(
-            id = "chat-viz-settings",
-            className = "viz-settings-box",
-            children = [
-                html.P(
-                    id = "chat-commands-slider-label",
-                    className = "settings-label",
-                    children = "Commands displayed:"
-                ),
-                build_bar_slider(get_commands()),
-                html.P(
-                    id = "toggle-grid-label",
-                    className = "settings-label",
-                    children = "Grid Lines:"
-                ),
-                build_radio_toggle_grid(),
-                html.P(
-                    id = "toggle-command-hue-label",
-                    className = "settings-label",
-                    children = "Vary Hue by Command Type:"
-                ),
-                build_radio_toggle_hues(),
-                build_download_button(),
-            ]
-        )
 
 
 def build_tab_chat() -> list:
@@ -217,21 +202,48 @@ def build_tab_chat() -> list:
                 html.Div(
                     id = "chat-main-viz-container",
                     children = [
-                        dcc.Dropdown(
-                            id = "chat-graph-dropdown",
-                            className = "viz-select-dropdown",
-                            options = [
-                                {"label": "Top Chatters - All Time", "value": "top chatters"},
-                                {"label": "Total Command Use - All Time", "value": "command use"}
-                                ],
-                            value = "top chatters"
-                            ),
-                        html.Div(id="chat-tab-bar-card")
-                        ]
-                    )
-                ]
-            )
-        ]
+                        html.Div(
+                            id = "chat-main-viz-title-container",
+                            className = "card-title-container",
+                            children = [
+                                html.P(
+                                    id = "chat-main-viz-card-title",
+                                    className = "card-title",
+                                    children = "Your Chat:"
+                                )
+                            ]
+                        ),
+                        html.Div(
+                            id="chat-plot-and-settings-container",
+                            children = [
+                                html.Div(
+                                    id = "chat-viz-settings-container",
+                                    children = [
+                                        html.P(
+                                            id = "chat-main-viz-dropdown",
+                                            className = "settings-label",
+                                            children = "Choose your insight:"
+                                        ),
+                                        dcc.Dropdown(
+                                            id = "chat-graph-dropdown",
+                                            className = "viz-select-dropdown",
+                                            options = [
+                                                {"label": "Top Chatters - All Time", "value": "top chatters"},
+                                                {"label": "Total Command Use - All Time", "value": "command use"}
+                                                ],
+                                            value = "top chatters"
+                                        ),
+                                        html.Div(id="chat-main-viz-settings")
+                                    ]
+                                ),
+                                html.Div(id="chat-tab-bar-card")
+                            ]
+                        ),
+                    ]
+                )
+            ]
+        )
+    ]
 
 
 def build_tab_followers() -> list:
@@ -494,17 +506,69 @@ def build_tab(tab: str) -> list:
 
 
 @app.callback(
+    Output(component_id="chat-main-viz-settings", component_property="children"),
+    [Input(component_id="chat-graph-dropdown", component_property="value")]
+)
+def build_chat_viz_settings(plot_title) -> html.Div:
+    if plot_title == "top chatters":
+        return html.Div(
+            id = "chat-viz-settings",
+            className = "viz-settings-box",
+            children = [
+                html.P(
+                    id = "top-chatter-slider-label",
+                    className = "settings-label",
+                    children = "Chatters displayed:"
+                ),
+                build_bar_slider(get_chatters()),
+                html.P(
+                    id = "toggle-grid-label",
+                    className = "settings-label",
+                    children = "Grid Lines:"
+                ),
+                build_radio_toggle_grid(),
+                build_download_button()
+            ]
+        )
+
+    elif plot_title == "command use":
+        return html.Div(
+            id = "chat-viz-settings",
+            className = "viz-settings-box",
+            children = [
+                html.P(
+                    id = "chat-commands-slider-label",
+                    className = "settings-label",
+                    children = "Commands displayed:"
+                ),
+                build_bar_slider(get_commands()),
+                html.P(
+                    id = "toggle-grid-label",
+                    className = "settings-label",
+                    children = "Grid Lines:"
+                ),
+                build_radio_toggle_grid(),
+                html.P(
+                    id = "toggle-command-hue-label",
+                    className = "settings-label",
+                    children = "Vary Hue by Command Type:"
+                ),
+                build_radio_toggle_hues(),
+                build_download_button(),
+            ]
+        )
+
+
+@app.callback(
     Output(component_id="chat-tab-bar-card", component_property="children"),
     [Input(component_id="chat-graph-dropdown", component_property="value")]
 )
-def build_bar_graph(title: str) -> list:
+def build_chat_main_viz(title = "top chatters") -> list:
     if title == "top chatters":
         return [
             html.Div(
-               id = "plot-and-settings-container",
-               className = "chat-plot-settings-container",
+               id = "chat-plot-container",
                children = [
-                    build_chat_viz_settings(title),
                     dcc.Graph(
                         id="top-chatters-bar", 
                         className = "chat-viz",
@@ -516,10 +580,8 @@ def build_bar_graph(title: str) -> list:
     elif title == "command use":
         return [
             html.Div(
-               id = "plot-and-settings-container",
-               className = "chat-plot-settings-container",
+               id = "chat-plot-container",
                children = [
-                    build_chat_viz_settings(title),
                     dcc.Graph(
                         id="command-use-bar", 
                         className = "chat-viz",
@@ -674,6 +736,7 @@ def bar_top_chatters(num_chatters: int, enable_gridlines: str, button_presses: i
         file_name = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{fig_title.replace(' ', '_').lower()}"
         fig.write_image(f"visualizations/{file_name}.png", width=1600, height=900)
     return fig
+
 
 @app.callback(
     Output(component_id="vod-graph", component_property="figure"),

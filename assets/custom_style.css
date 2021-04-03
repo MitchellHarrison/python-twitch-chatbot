@@ -79,6 +79,16 @@ a, #title-banner {
     flex-grow: 1;
 }
 
+#vod-card {
+    padding: 0 2rem 2rem 2rem;
+    margin-left: 10rem;
+    margin-right: 5rem;
+}
+
+#vod-settings-card {
+    margin-right: 3rem;
+}
+
 .card-title {
     font-size: 1.6rem;
     color: #5F5F60;

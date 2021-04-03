@@ -27,7 +27,7 @@ chart_layout = {
         family = "poppins",
         size = 20,
         color = colors["text_base"]),
-    "paper_bgcolor" : "rgba(0,0,0,0)",
+    "paper_bgcolor" : "#030B14",
     "plot_bgcolor" : "rgba(0,0,0,0)",
     "height" : 700,
     "yaxis" : dict(showgrid = False)
@@ -271,6 +271,11 @@ def build_tab_vod_analysis() -> list:
                 html.Div(
                     id = "vod-card",
                     children = [
+                        html.P(
+                            id = "vod-card-title",
+                            className = "card-title",
+                            children = "Previous Broadcast:"
+                        ),
                         html.Div(
                             id = "vod-container",
                             children = [
@@ -289,9 +294,24 @@ def build_tab_vod_analysis() -> list:
                     id = "vod-settings-card",
                     children = [
                         html.Div(
+                            id = "vod-title-container",
+                            className = "card-title-container",
+                            children = [
+                                html.P(
+                                    id = "vod-settings-title",
+                                    className = "card-title",
+                                    children = "Settings:"
+                                ),
+                            ]
+                        ),
+                        html.Div(
                             id = "vod-settings",
                             children = [
-                                html.P("Choose your viz"),
+                                html.P(
+                                    id = "vod-data-select",
+                                    className = "settings-label",
+                                    children = "Choose the visualization:"
+                                ),
                                 dcc.Dropdown(
                                     id = "vod-data-select-dropdown",
                                     options = [

@@ -94,7 +94,9 @@ class DeleteCommand(CommandBase):
                 )
                 return
             
-            cursor.execute(f"DELETE FROM text_commands WHERE command = '{command}';")
+            entry = {"command": command}
+
+            cursor.execute(f"DELETE FROM text_commands WHERE command = (:command);", entry)
             conn.commit()
             cursor.close()
             conn.close()
@@ -129,7 +131,11 @@ class EditCommand(CommandBase):
                 return 
             
             new_message = " ".join(message.split()[2:])
-            cursor.execute(f"UPDATE text_commands SET message = '{new_message}' WHERE command = '{command}';")
+            entry = {
+                "message": new_message,
+                "command": command
+            }
+            cursor.execute(f"UPDATE text_commands SET message = (:message) WHERE command = (:command);", entry)
             conn.commit()
             cursor.close()
             conn.close()

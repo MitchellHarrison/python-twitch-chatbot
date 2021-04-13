@@ -101,6 +101,7 @@ a, #title-banner {
     flex-direction: column;
     text-align: center;
     border: solid #05101E 5px;
+    border-left: 0;
 }
 
 .tab-parent {
@@ -167,6 +168,7 @@ a, #title-banner {
     flex-direction: column;
     flex-grow: 1;
     border: solid #05101E 5px;
+    border-right: 0;
 }
 
 .text-insight {

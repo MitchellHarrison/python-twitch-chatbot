@@ -85,14 +85,15 @@ def build_all_tabs() -> html.Div:
     # current dash issue requires tab styles to be defined inline
     TAB_STYLE = {
         "background-color": "#030B14",
-        "border": "none",
+        "border": "solid #05101E 2px",
         "color": "#5F5F60",
         "text-transform": "uppercase"
+        # "border": "solid #05101E 5px"
     }
 
     TAB_SELECTED_STYLE = {
         "background-color": "#030B14",
-        "border": "none",
+        "border": "solid #05101E 2px",
         "border-bottom": "solid 3px #0597DC",
         "color": "#5F5F60",
         "text-transform": "uppercase"

@@ -252,7 +252,59 @@ class FollowAgeCommand(CommandBase):
                 return
         cursor.close()
         conn.close()
-        
+
+        follow_time = datetime.strptime(follow_time_str, "%Y-%m-%dT%H:%M:%SZ")
+        now = datetime.now()
+
+        delta = relativedelta.relativedelta(now, follow_time)
+        follow_stats = {
+            "year": delta.years,
+            "month": delta.months,
+            "day": delta.days,
+            "hour": delta.hours,
+            "minute": delta.minutes
+        }
+
+        message = f"@{user} has been following for"
+        for k,v in follow_stats.items():
+            if v > 0:
+                message += f" {v} {k}"
+                if v > 1:
+                    message += "s"
+        message += "!"
+        self.bot.send_message(
+            channel = self.bot.channel,
+            message = message
+        )
+
+
+class FollowAgeCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!followage"
+
+
+    def execute(self, user, message):
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor()
+
+        if len(message.split()) > 1:
+            user = message.split()[1]
+
+        with conn:
+            cursor.execute(f"""SELECT time FROM followers
+                                WHERE username='{user.lower()}'""")
+            try:
+                follow_time_str = cursor.fetchone()[0]
+            except TypeError:
+                self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = f"{user} is not currently following {self.bot.channel} or is a new follower."
+                )
+                return
+        cursor.close()
+        conn.close()
+
         follow_time = datetime.strptime(follow_time_str, "%Y-%m-%dT%H:%M:%SZ")
         now = datetime.now()
         
@@ -278,55 +330,52 @@ class FollowAgeCommand(CommandBase):
         )
 
 
-# class UptimeCommand(CommandBase):
-#     @property
-#     def command_name(self):
-#         return "!uptime"
+class UptimeCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!uptime"
 
-    
-#     def execute(self, user, message):
-#         url = f"https://api.twitch.tv/helix/streams?user_id={self.bot.user_id}"
-#         headers = {
-#             "client-id": self.bot.client_id,
-#             "authorization" : f"Bearer {self.bot.bearer}"
-#         }
-#         response = requests.get(url, headers = headers, timeout=3)
-#         data = json.loads(response.content)
-#         start_time = data["data"][0]["started_at"]
-#         # try:
-#         #     start_time = data["data"][0]["started_at"]
-#         # except KeyError:
-#         #     self.bot.send_message(
-#         #         channel = self.bot.channel,
-#         #         message = f"{self.bot.channel} is not currently live! :("
-#         #     )
-#         #     return     
 
-#         delta = datetime.now() - start_time
+    def execute(self, user, message):
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor()
 
-#         years = delta.days // 365
-#         days = delta.days - (years*365)
-#         hours = delta.seconds // 3600
-#         minutes = (delta.seconds - hours*3600) // 60
-#         seconds = delta.seconds - (hours * 3600) - (minutes * 60)
+        if len(message.split()) > 1:
+            user = message.split()[1]
 
-#         follow_stats = {
-#             "year" : years,
-#             "day" : days,
-#             "hour" : hours,
-#             "minute" : minutes,
-#             "second" : seconds
-#         }
+        with conn:
+            cursor.execute(f"""SELECT time FROM bot_logs""")
+            try:
+                time = cursor.fetchone()[0]
+            except TypeError:
+                self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = f"Absenth did this wrong, and should stop doing it wrong"
+                )
+                return
+        cursor.close()
+        conn.close()
 
-#         message = f"@{user}, {self.bot.channel} has been live for"
-#         for k,v in follow_stats.items():
-#             if v > 0:
-#                 message += f" {v} {k}"
-#                 if v > 1:
-#                     message += "s"
-#         message += "!"
+        uptime = datetime.strptime(uptime_str, "%Y-%m-%dT%H:%M:%SZ")
+        now = datetime.now()
 
-#         self.bot.send_message(
-#             channel = self.bot.channel,
-#             message = message
-#         )
+        delta = relativedelta.relativedelta(now, uptime)
+        uptime_stats = {
+            "year": delta.years,
+            "month": delta.months,
+            "day": delta.days,
+            "hour": delta.hours,
+            "minute": delta.minutes
+        }
+
+        message = f"I have been alive for"
+        for k,v in uptime_stats.items():
+            if v > 0:
+                message += f" {v} {k}"
+                if v > 1:
+                    message += "s"
+        message += "!"
+        self.bot.send_message(
+            channel = self.bot.channel,
+            message = message
+        )

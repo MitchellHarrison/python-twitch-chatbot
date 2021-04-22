@@ -1,6 +1,7 @@
 import sqlite3
 from bot import Bot
 from environment import Environment
+from datetime import datetime
 
 # check for missing .db file or missing tables, and create them
 def db_setup():
@@ -12,6 +13,7 @@ def db_setup():
         cursor.execute("CREATE TABLE IF NOT EXISTS chat_messages (time text, user text, message text);")
         cursor.execute("CREATE TABLE IF NOT EXISTS text_commands (command text, message text);")
         cursor.execute("CREATE TABLE IF NOT EXISTS false_commands (time text, user text, command text);")
+        cursor.execute("CREATE TABLE IF NOT EXISTS bot_logs (time text);")
     cursor.close()
     conn.close()
 
@@ -25,9 +27,19 @@ def get_text_commands() -> dict:
     conn.close()
     return commands
 
+def bot_startup():
+    now = datetime.now()
+    conn = sqlite3.connect("data.db")
+    cursor = conn.cursor()
+    with conn:
+        commands = {cursor.execute("UPDATE bot_logs SET time=(now)")};
+    cursor.close()
+    con.close()
+    return commands
 
 def main():
     db_setup()
+    bot_startup()
     text_commands = get_text_commands()
     environment = Environment()
     bot = Bot(
@@ -45,4 +57,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
+

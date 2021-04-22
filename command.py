@@ -11,13 +11,13 @@ class CommandBase(ABC):
         self.bot = bot
 
 
-    @property 
+    @property
     @abstractmethod
     def command_name(self):
         raise NotImplementedError
-    
-    
-    @abstractmethod 
+
+
+    @abstractmethod
     def execute(self):
         raise NotImplementedError
 
@@ -64,7 +64,7 @@ class AddCommand(CommandBase):
 
 # delete existing text command
 class DeleteCommand(CommandBase):
-    @property 
+    @property
     def command_name(self):
         return "!delcommand"
 
@@ -93,7 +93,7 @@ class DeleteCommand(CommandBase):
                     f"The {command} command doesn't exist, @{user}."
                 )
                 return
-            
+
             entry = {"command": command}
 
             cursor.execute(f"DELETE FROM text_commands WHERE command = (:command);", entry)
@@ -112,7 +112,7 @@ class EditCommand(CommandBase):
     def command_name(self):
         return "!editcommand"
 
-    
+
     def execute(self, user, message):
         if user == self.bot.channel:
             first_word = message.split()[1]
@@ -128,8 +128,8 @@ class EditCommand(CommandBase):
                     self.bot.channel,
                     f"That command doesn't exist, @{user}."
                 )
-                return 
-            
+                return
+
             new_message = " ".join(message.split()[2:])
             entry = {
                 "message": new_message,
@@ -150,7 +150,7 @@ class JokeCommand(CommandBase):
     def command_name(self):
         return "!joke"
 
-    
+
     def execute(self, user, message):
         url = "https://icanhazdadjoke.com/"
         headers = {"accept" : "application/json"}
@@ -173,7 +173,7 @@ class PoemCommand(CommandBase):
     @property
     def command_name(self):
         return "!poem"
-    
+
 
     def execute(self, user, message):
         num_lines = 4
@@ -197,11 +197,11 @@ class PoemCommand(CommandBase):
 
 
 class CommandsCommand(CommandBase):
-    @property 
+    @property
     def command_name(self):
         return "!commands"
 
-    
+
     def execute(self, user, message):
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
@@ -210,16 +210,16 @@ class CommandsCommand(CommandBase):
             text_commands = [t[0] for t in cursor.fetchall()]
         cursor.close()
         conn.close()
-        
+
         hard_commands = [c.command_name for c in (s(self) for s in CommandBase.__subclasses__())]
         commands_str = ", ".join(text_commands) + ", " + ", ".join(hard_commands)
-        
-        # check if commands fit in chat; dropping 
+
+        # check if commands fit in chat; dropping
         while len(commands_str) > 500:
             commands = commands_str.split()
             commands = commands[:-2]
             commands_str = " ".join(commands)
-        
+
         self.bot.send_message(
             channel = self.bot.channel,
             message = commands_str
@@ -227,11 +227,11 @@ class CommandsCommand(CommandBase):
 
 
 class FollowAgeCommand(CommandBase):
-    @property 
+    @property
     def command_name(self):
         return "!followage"
 
-    
+
     def execute(self, user, message):
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
@@ -307,7 +307,7 @@ class FollowAgeCommand(CommandBase):
 
         follow_time = datetime.strptime(follow_time_str, "%Y-%m-%dT%H:%M:%SZ")
         now = datetime.now()
-        
+
         delta = relativedelta.relativedelta(now, follow_time)
         follow_stats = {
             "year": delta.years,

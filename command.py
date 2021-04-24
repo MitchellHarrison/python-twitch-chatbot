@@ -11,13 +11,13 @@ class CommandBase(ABC):
         self.bot = bot
 
 
-    @property 
+    @property
     @abstractmethod
     def command_name(self):
         raise NotImplementedError
-    
-    
-    @abstractmethod 
+
+
+    @abstractmethod
     def execute(self):
         raise NotImplementedError
 
@@ -64,7 +64,7 @@ class AddCommand(CommandBase):
 
 # delete existing text command
 class DeleteCommand(CommandBase):
-    @property 
+    @property
     def command_name(self):
         return "!delcommand"
 
@@ -93,7 +93,7 @@ class DeleteCommand(CommandBase):
                     f"The {command} command doesn't exist, @{user}."
                 )
                 return
-            
+
             entry = {"command": command}
 
             cursor.execute(f"DELETE FROM text_commands WHERE command = (:command);", entry)
@@ -112,7 +112,7 @@ class EditCommand(CommandBase):
     def command_name(self):
         return "!editcommand"
 
-    
+
     def execute(self, user, message):
         if user == self.bot.channel:
             first_word = message.split()[1]
@@ -128,8 +128,8 @@ class EditCommand(CommandBase):
                     self.bot.channel,
                     f"That command doesn't exist, @{user}."
                 )
-                return 
-            
+                return
+
             new_message = " ".join(message.split()[2:])
             entry = {
                 "message": new_message,
@@ -150,7 +150,7 @@ class JokeCommand(CommandBase):
     def command_name(self):
         return "!joke"
 
-    
+
     def execute(self, user, message):
         url = "https://icanhazdadjoke.com/"
         headers = {"accept" : "application/json"}
@@ -173,7 +173,7 @@ class PoemCommand(CommandBase):
     @property
     def command_name(self):
         return "!poem"
-    
+
 
     def execute(self, user, message):
         num_lines = 4
@@ -197,11 +197,11 @@ class PoemCommand(CommandBase):
 
 
 class CommandsCommand(CommandBase):
-    @property 
+    @property
     def command_name(self):
         return "!commands"
 
-    
+
     def execute(self, user, message):
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
@@ -210,16 +210,16 @@ class CommandsCommand(CommandBase):
             text_commands = [t[0] for t in cursor.fetchall()]
         cursor.close()
         conn.close()
-        
+
         hard_commands = [c.command_name for c in (s(self) for s in CommandBase.__subclasses__())]
         commands_str = ", ".join(text_commands) + ", " + ", ".join(hard_commands)
-        
-        # check if commands fit in chat; dropping 
+
+        # check if commands fit in chat; dropping
         while len(commands_str) > 500:
             commands = commands_str.split()
             commands = commands[:-2]
             commands_str = " ".join(commands)
-        
+
         self.bot.send_message(
             channel = self.bot.channel,
             message = commands_str
@@ -227,11 +227,11 @@ class CommandsCommand(CommandBase):
 
 
 class FollowAgeCommand(CommandBase):
-    @property 
+    @property
     def command_name(self):
         return "!followage"
 
-    
+
     def execute(self, user, message):
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
@@ -252,10 +252,10 @@ class FollowAgeCommand(CommandBase):
                 return
         cursor.close()
         conn.close()
-        
+
         follow_time = datetime.strptime(follow_time_str, "%Y-%m-%dT%H:%M:%SZ")
         now = datetime.now()
-        
+
         delta = relativedelta.relativedelta(now, follow_time)
         follow_stats = {
             "year": delta.years,
@@ -278,55 +278,104 @@ class FollowAgeCommand(CommandBase):
         )
 
 
-# class UptimeCommand(CommandBase):
-#     @property
-#     def command_name(self):
-#         return "!uptime"
+class FollowAgeCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!followage"
 
-    
-#     def execute(self, user, message):
-#         url = f"https://api.twitch.tv/helix/streams?user_id={self.bot.user_id}"
-#         headers = {
-#             "client-id": self.bot.client_id,
-#             "authorization" : f"Bearer {self.bot.bearer}"
-#         }
-#         response = requests.get(url, headers = headers, timeout=3)
-#         data = json.loads(response.content)
-#         start_time = data["data"][0]["started_at"]
-#         # try:
-#         #     start_time = data["data"][0]["started_at"]
-#         # except KeyError:
-#         #     self.bot.send_message(
-#         #         channel = self.bot.channel,
-#         #         message = f"{self.bot.channel} is not currently live! :("
-#         #     )
-#         #     return     
 
-#         delta = datetime.now() - start_time
+    def execute(self, user, message):
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor()
 
-#         years = delta.days // 365
-#         days = delta.days - (years*365)
-#         hours = delta.seconds // 3600
-#         minutes = (delta.seconds - hours*3600) // 60
-#         seconds = delta.seconds - (hours * 3600) - (minutes * 60)
+        if len(message.split()) > 1:
+            user = message.split()[1]
 
-#         follow_stats = {
-#             "year" : years,
-#             "day" : days,
-#             "hour" : hours,
-#             "minute" : minutes,
-#             "second" : seconds
-#         }
+        with conn:
+            cursor.execute(f"""SELECT time FROM followers
+                                WHERE username='{user.lower()}'""")
+            try:
+                follow_time_str = cursor.fetchone()[0]
+            except TypeError:
+                self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = f"{user} is not currently following {self.bot.channel} or is a new follower."
+                )
+                return
+        cursor.close()
+        conn.close()
 
-#         message = f"@{user}, {self.bot.channel} has been live for"
-#         for k,v in follow_stats.items():
-#             if v > 0:
-#                 message += f" {v} {k}"
-#                 if v > 1:
-#                     message += "s"
-#         message += "!"
+        follow_time = datetime.strptime(follow_time_str, "%Y-%m-%dT%H:%M:%SZ")
+        now = datetime.now()
 
-#         self.bot.send_message(
-#             channel = self.bot.channel,
-#             message = message
-#         )
+        delta = relativedelta.relativedelta(now, follow_time)
+        follow_stats = {
+            "year": delta.years,
+            "month": delta.months,
+            "day": delta.days,
+            "hour": delta.hours,
+            "minute": delta.minutes
+        }
+
+        message = f"@{user} has been following for"
+        for k,v in follow_stats.items():
+            if v > 0:
+                message += f" {v} {k}"
+                if v > 1:
+                    message += "s"
+        message += "!"
+        self.bot.send_message(
+            channel = self.bot.channel,
+            message = message
+        )
+
+
+class UptimeCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!uptime"
+
+
+    def execute(self, user, message):
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor()
+
+        if len(message.split()) > 1:
+            user = message.split()[1]
+
+        with conn:
+            cursor.execute(f"""SELECT time FROM bot_logs""")
+            try:
+                time = cursor.fetchone()[0]
+            except TypeError:
+                self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = f"Absenth did this wrong, and should stop doing it wrong"
+                )
+                return
+        cursor.close()
+        conn.close()
+
+        uptime = datetime.strptime(uptime_str, "%Y-%m-%dT%H:%M:%SZ")
+        now = datetime.now()
+
+        delta = relativedelta.relativedelta(now, uptime)
+        uptime_stats = {
+            "year": delta.years,
+            "month": delta.months,
+            "day": delta.days,
+            "hour": delta.hours,
+            "minute": delta.minutes
+        }
+
+        message = f"I have been alive for"
+        for k,v in uptime_stats.items():
+            if v > 0:
+                message += f" {v} {k}"
+                if v > 1:
+                    message += "s"
+        message += "!"
+        self.bot.send_message(
+            channel = self.bot.channel,
+            message = message
+        )

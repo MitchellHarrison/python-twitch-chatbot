@@ -79,7 +79,7 @@ class Bot():
         except AttributeError:
             pass
 
-    
+
     # store data on commands attempted that don't exist
     def store_wrong_command(self, user: str, command: str):
         entry = {

@@ -31,15 +31,15 @@ def bot_startup():
     now = datetime.now()
     conn = sqlite3.connect("data.db")
     cursor = conn.cursor()
-    with conn:
-        commands = {cursor.execute("UPDATE bot_logs SET time=(now)")};
+    # with conn:
+        # cursor.execute("UPDATE bot_logs SET time=(now)")    
     cursor.close()
-    con.close()
+    conn.close()
     return commands
 
 def main():
     db_setup()
-    bot_startup()
+    # bot_startup()
     text_commands = get_text_commands()
     environment = Environment()
     bot = Bot(

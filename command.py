@@ -26,7 +26,6 @@ class CommandBase(ABC):
         return self.command_name
 
 
-# TODO: !addcommand
 class AddCommand(CommandBase):
     @property
     def command_name(self):
@@ -62,7 +61,6 @@ class AddCommand(CommandBase):
             )
 
 
-# delete existing text command
 class DeleteCommand(CommandBase):
     @property
     def command_name(self):

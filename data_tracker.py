@@ -74,8 +74,6 @@ def db_setup(channel: str, client_id: str, bearer: str, user_id: int, follow_pag
 
 
 def get_stream_data(channel: str, client_id: str, bearer: str) -> dict:
-    print(bearer)
-    print(client_id)
     url = f"https://api.twitch.tv/helix/streams/?user_login={channel}"
     headers = {
         "client-id" : client_id,
@@ -83,14 +81,13 @@ def get_stream_data(channel: str, client_id: str, bearer: str) -> dict:
     }
     response = requests.get(url, headers = headers)
     data = json.loads(response.content)
-    print(json.dumps(data, indent = 4))
     return data["data"][0]
 
 
 def get_tags(channel: str, client_id: str, bearer: str, user_id: str) -> list:
     url = f"https://api.twitch.tv/helix/streams/tags?user_id={user_id}"
     headers = {
-        "client-id": client_id,
+        "client_id": client_id,
         "authorization": f"Bearer {bearer}"
     }
     response = requests.get(url, headers=headers)
@@ -139,6 +136,7 @@ def get_subscribers(channel: str, client_id: str, bearer: str, user_id: str, cur
     print(json.dumps(data, indent=4))
 
 
+#TODO
 def get_subscriber_list() -> list:
     pass
 

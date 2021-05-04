@@ -1,4 +1,4 @@
-variables.env
+*.env
 *.pyc
 *.db
 *.txt

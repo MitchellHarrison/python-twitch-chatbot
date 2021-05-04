@@ -1,4 +1,4 @@
-*.env
+credentials.env
 *.pyc
 *.db
 *.txt

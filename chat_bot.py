@@ -14,6 +14,11 @@ def db_setup():
         cursor.execute("CREATE TABLE IF NOT EXISTS text_commands (command text, message text);")
         cursor.execute("CREATE TABLE IF NOT EXISTS false_commands (time text, user text, command text);")
         cursor.execute("CREATE TABLE IF NOT EXISTS bot_logs (time text);")
+        cursor.execute("SELECT * FROM bot_logs")
+        uptime = cursor.fetchall()
+        if len(uptime) == 0:
+            print("time added")
+            cursor.execute("INSERT INTO bot_logs (time) VALUES (:now)", {"now":str(datetime.now())})
     cursor.close()
     conn.close()
 
@@ -27,19 +32,21 @@ def get_text_commands() -> dict:
     conn.close()
     return commands
 
+
+# this is absenth's problem child
 def bot_startup():
     now = datetime.now()
     conn = sqlite3.connect("data.db")
     cursor = conn.cursor()
-    # with conn:
-        # cursor.execute("UPDATE bot_logs SET time=(now)")    
+    with conn:
+        cursor.execute("UPDATE bot_logs SET time=(:now)", {"now":now})    
     cursor.close()
     conn.close()
-    return commands
+
 
 def main():
     db_setup()
-    # bot_startup()
+    bot_startup()
     text_commands = get_text_commands()
     environment = Environment()
     bot = Bot(

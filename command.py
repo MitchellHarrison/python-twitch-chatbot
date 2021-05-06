@@ -224,57 +224,6 @@ class CommandsCommand(CommandBase):
         )
 
 
-class FollowAgeCommand(CommandBase):
-    @property
-    def command_name(self):
-        return "!followage"
-
-
-    def execute(self, user, message):
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor()
-
-        if len(message.split()) > 1:
-            user = message.split()[1]
-
-        with conn:
-            cursor.execute(f"""SELECT time FROM followers
-                                WHERE username='{user.lower()}'""")
-            try:
-                follow_time_str = cursor.fetchone()[0]
-            except TypeError:
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"{user} is not currently following {self.bot.channel} or is a new follower."
-                )
-                return
-        cursor.close()
-        conn.close()
-
-        follow_time = datetime.strptime(follow_time_str, "%Y-%m-%dT%H:%M:%SZ")
-        now = datetime.now()
-
-        delta = relativedelta.relativedelta(now, follow_time)
-        follow_stats = {
-            "year": delta.years,
-            "month": delta.months,
-            "day": delta.days,
-            "hour": delta.hours,
-            "minute": delta.minutes
-        }
-
-        message = f"@{user} has been following for"
-        for k,v in follow_stats.items():
-            if v > 0:
-                message += f" {v} {k}"
-                if v > 1:
-                    message += "s"
-        message += "!"
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = message
-        )
-
 
 class FollowAgeCommand(CommandBase):
     @property
@@ -328,33 +277,29 @@ class FollowAgeCommand(CommandBase):
         )
 
 
-class UptimeCommand(CommandBase):
+class BotTimeCommand(CommandBase):
     @property
     def command_name(self):
-        return "!uptime"
+        return "!bottime"
 
 
     def execute(self, user, message):
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
 
-        if len(message.split()) > 1:
-            user = message.split()[1]
-
         with conn:
-            cursor.execute(f"""SELECT time FROM bot_logs""")
+            cursor.execute(f"SELECT time FROM bot_logs;")
             try:
                 time = cursor.fetchone()[0]
-            except TypeError:
+            except TypeError as e:
                 self.bot.send_message(
                     channel = self.bot.channel,
-                    message = f"Absenth did this wrong, and should stop doing it wrong"
+                    message = "This command is broken. Yell at Mitch, not me."
                 )
                 return
         cursor.close()
         conn.close()
-
-        uptime = datetime.strptime(uptime_str, "%Y-%m-%dT%H:%M:%SZ")
+        uptime = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
         now = datetime.now()
 
         delta = relativedelta.relativedelta(now, uptime)
@@ -377,3 +322,66 @@ class UptimeCommand(CommandBase):
             channel = self.bot.channel,
             message = message
         )
+
+
+class RankCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!rank"
+
+
+    def execute(self, user, message):
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor() 
+        if len(message.split()) > 1:
+            command = message.split[1]
+            # command use rank
+            if command not in self.bot.commands:
+                self.bot.send_message(
+                        channel = self.bot.channel,
+                        message = f"That is not a command that I have. Sorry!"
+                    )
+                return
+            # TODO: query database for number of times each user used a given command
+            
+        else:
+            # get count of unique chatters from chat_messages table
+
+            with conn:
+                cursor.execute("""SELECT user 
+                        FROM chat_messages 
+                        GROUP BY user
+                        ORDER BY COUNT(user) DESC;
+                        """) 
+                chatters = [c[0] for c in cursor.fetchall()]
+            cursor.close()
+            conn.close()
+
+            # find rank of a given user
+            user_rank = chatters.index(user) + 1
+
+            # send the rank in chat
+            message = f"{user}, you are number {user_rank} out of {len(chatters)}!"
+            self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = message
+                )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

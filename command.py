@@ -208,7 +208,6 @@ class CommandsCommand(CommandBase):
             text_commands = [t[0] for t in cursor.fetchall()]
         cursor.close()
         conn.close()
-
         hard_commands = [c.command_name for c in (s(self) for s in CommandBase.__subclasses__())]
         commands_str = ", ".join(text_commands) + ", " + ", ".join(hard_commands)
 
@@ -334,19 +333,55 @@ class RankCommand(CommandBase):
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor() 
         if len(message.split()) > 1:
-            command = message.split[1]
+            command = message.split()[1]
             # command use rank
-            if command not in self.bot.commands:
+            if not command.startswith("!"):
+                command = f"!{command}"
+
+            with conn:
+                cursor.execute("SELECT command FROM text_commands")
+                text_commands = [t[0] for t in cursor.fetchall()]
+
+            commands = [*text_commands, *self.bot.commands] 
+
+            if command not in commands:
                 self.bot.send_message(
                         channel = self.bot.channel,
                         message = f"That is not a command that I have. Sorry!"
                     )
                 return
-            # TODO: query database for number of times each user used a given command
-            
+
+            # query database for number of times each user used a given command
+            with conn:
+                cursor.execute("""SELECT user
+                        FROM command_use
+                        WHERE command = :command
+                        GROUP BY user
+                        ORDER BY COUNT(user) DESC;
+                                """, 
+                                {"command": command}
+                        )
+
+                users = [u[0] for u in cursor.fetchall()]
+
+            cursor.close()
+            conn.close()
+            try:
+                user_rank = users.index(user) + 1
+            except ValueError:
+                self.bot.send_message(
+                        channel = self.bot.channel,
+                        message = f"{user}, you haven't used that command since I've been listening. Sorry!"
+                    )
+                return
+            message = f"{user}, you are the number {user_rank} user of the {command} command out of {len(users)} users."
+            self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = message
+                    )
+
         else:
             # get count of unique chatters from chat_messages table
-
             with conn:
                 cursor.execute("""SELECT user 
                         FROM chat_messages 
@@ -361,27 +396,35 @@ class RankCommand(CommandBase):
             user_rank = chatters.index(user) + 1
 
             # send the rank in chat
-            message = f"{user}, you are number {user_rank} out of {len(chatters)}!"
+            message = f"{user}, you are number {user_rank} out of {len(chatters)} chatters!"
             self.bot.send_message(
                     channel = self.bot.channel,
                     message = message
                 )
 
+            
+class FeatureRequestCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!featurerequest"
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def execute(self, user, message):
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor()
+        
+        entry = {
+                "time": str(datetime.now()), 
+                "user": user, 
+                "message": message
+            }
+        with conn: 
+            cursor.execute("INSERT INTO feature_requests VALUES (:time, :user, :message)", entry)
+            conn.commit()
+        cursor.close()
+        conn.close()
+        self.bot.send_message(
+                channel = self.bot.channel,
+                message = f"Got it! Thanks for your help, {user}!"
+            )
 

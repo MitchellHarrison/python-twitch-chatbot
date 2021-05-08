@@ -13,6 +13,7 @@ def db_setup():
         cursor.execute("CREATE TABLE IF NOT EXISTS chat_messages (time text, user text, message text);")
         cursor.execute("CREATE TABLE IF NOT EXISTS text_commands (command text, message text);")
         cursor.execute("CREATE TABLE IF NOT EXISTS false_commands (time text, user text, command text);")
+        cursor.execute("CREATE TABLE IF NOT EXISTS feature_requests (time text, user text, message text);")
         cursor.execute("CREATE TABLE IF NOT EXISTS bot_logs (time text);")
         cursor.execute("SELECT * FROM bot_logs")
         uptime = cursor.fetchall()
@@ -64,3 +65,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -5,6 +5,12 @@ import sqlite3
 from datetime import datetime
 from dateutil import relativedelta
 from abc import ABC, abstractmethod
+from sqlalchemy import select
+from database import engine, Session, Base
+from models import BotTime, Followers
+
+Base.metadata.create_all(bind=engine)
+session = Session()
 
 class CommandBase(ABC):
     def __init__(self, bot):
@@ -231,27 +237,14 @@ class FollowAgeCommand(CommandBase):
 
 
     def execute(self, user, message):
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor()
-
         if len(message.split()) > 1:
-            user = message.split()[1]
+            user = message.split()[1].strip("@").lower()
 
-        with conn:
-            cursor.execute(f"""SELECT time FROM followers
-                                WHERE username='{user.lower()}'""")
-            try:
-                follow_time_str = cursor.fetchone()[0]
-            except TypeError:
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"{user} is not currently following {self.bot.channel} or is a new follower."
-                )
-                return
-        cursor.close()
-        conn.close()
-
-        follow_time = datetime.strptime(follow_time_str, "%Y-%m-%dT%H:%M:%SZ")
+        user_entry = engine.execute(
+            select(Followers.time)
+            .where(Followers.username == user)
+        ).fetchone()
+        follow_time = user_entry[0]
         now = datetime.now()
 
         delta = relativedelta.relativedelta(now, follow_time)
@@ -263,7 +256,7 @@ class FollowAgeCommand(CommandBase):
             "minute": delta.minutes
         }
 
-        message = f"@{user} has been following for"
+        message = f"{user} has been following for"
         for k,v in follow_stats.items():
             if v > 0:
                 message += f" {v} {k}"

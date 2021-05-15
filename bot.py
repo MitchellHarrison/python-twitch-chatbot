@@ -1,8 +1,13 @@
 import re
 import socket
-import sqlite3
 import command
 from datetime import datetime
+from sqlalchemy import insert, select
+from database import Session, Base, engine
+from models import ChatMessages, CommandUse, FalseCommands, BotTime, TextCommands
+
+session = Session()
+Base.metadata.create_all(bind=engine)
 
 class Bot():
     def __init__(self, server: str, port: int, oauth_token: str, bot_name: str, channel: str, user_id: str, client_id: str, text_commands: dict):
@@ -83,48 +88,41 @@ class Bot():
     # store data on commands attempted that don't exist
     def store_wrong_command(self, user: str, command: str):
         entry = {
-            "time" : datetime.now(),
             "user" : user,
             "command" : command
         }
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor()
-        with conn:
-            cursor.execute("INSERT INTO false_commands (time, user, command) VALUES (:time, :user, :command)", entry)
-        cursor.close()
-        conn.close()
+        
+        engine.execute(
+             insert(FalseCommands)
+             .values(entry)
+        )
         
 
     # insert data to SQLite db
     def store_message_data(self, user: str, message: str):
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor()
         entry = {
-            "time" : str(datetime.now()),
             "user" : user,
             "message" : message
         }
-        with conn:
-            cursor.execute("INSERT INTO chat_messages (time, user, message) VALUES (:time, :user, :message)", entry)
-        cursor.close()
-        conn.close()
-
+        
+        engine.execute(
+            insert(ChatMessages)
+            .values(entry)
+        )
+        
 
     # insert data to SQLite db
+    from sqlalchemy import insert, select
     def store_command_data(self, user: str, command: str, is_custom: int):
         entry = {
-            "time" : str(datetime.now()),
             "user" : user,
             "command" : command,
             "is_custom" : is_custom
         }
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor()
-        with conn:
-            cursor.execute("""INSERT INTO command_use (time, user, command, is_custom) 
-                                VALUES (:time, :user, :command, :is_custom)""", entry)
-        cursor.close()
-        conn.close()
+        engine.execute(
+            insert(CommandUse)
+            .values(entry)
+        )
 
 
     # execute each command
@@ -148,10 +146,9 @@ class Bot():
 
 
     def reload_text_commands(self):
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor()
-        with conn:
-            commands = {k:v for k,v in [e for e in cursor.execute("SELECT * FROM text_commands")]}
-        cursor.close()
-        conn.close()
+        stmt = select(
+            TextCommands.command,
+            TextCommands.message
+        )
+        commands = {k:v for k,v in [e for e in engine.execute(stmt)]}
         return commands

@@ -1,53 +1,25 @@
 import sqlite3
+from sqlalchemy import select, update, insert
 from bot import Bot
 from environment import Environment
 from datetime import datetime
-
-# check for missing .db file or missing tables, and create them
-def db_setup():
-    # if "data.db" doesn't exist, connect() will create it
-    conn = sqlite3.connect("data.db")
-    cursor = conn.cursor()
-    with conn:
-        cursor.execute("CREATE TABLE IF NOT EXISTS command_use (time text, user text, command text, is_custom number);")
-        cursor.execute("CREATE TABLE IF NOT EXISTS chat_messages (time text, user text, message text);")
-        cursor.execute("CREATE TABLE IF NOT EXISTS text_commands (command text, message text);")
-        cursor.execute("CREATE TABLE IF NOT EXISTS false_commands (time text, user text, command text);")
-        cursor.execute("CREATE TABLE IF NOT EXISTS feature_requests (time text, user text, message text);")
-        cursor.execute("CREATE TABLE IF NOT EXISTS bot_logs (time text);")
-        cursor.execute("SELECT * FROM bot_logs")
-        uptime = cursor.fetchall()
-        if len(uptime) == 0:
-            print("time added")
-            cursor.execute("INSERT INTO bot_logs (time) VALUES (:now)", {"now":str(datetime.now())})
-    cursor.close()
-    conn.close()
+from sqlalchemy import select, insert
+from database import Base, Session, engine
+from models import TextCommands, BotTime 
 
 
 def get_text_commands() -> dict:
-    conn = sqlite3.connect("data.db")
-    cursor = conn.cursor()
-    with conn:
-        commands = {k:v for k,v in [e for e in cursor.execute("SELECT * FROM text_commands;")]}
-    cursor.close()
-    conn.close()
-    return commands
-
-
-# this is absenth's problem child
-def bot_startup():
-    now = datetime.now()
-    conn = sqlite3.connect("data.db")
-    cursor = conn.cursor()
-    with conn:
-        cursor.execute("UPDATE bot_logs SET time=(:now)", {"now":now})    
-    cursor.close()
-    conn.close()
+    command_rows = engine.execute(select(TextCommands.command, TextCommands.message))
+    text_commands = {k:v for k,v in [e for e in command_rows]}
+    return text_commands
 
 
 def main():
-    db_setup()
-    bot_startup()
+    # create all tables
+    Base.metadata.create_all(bind=engine)
+    session = Session()
+    # log bot startup time
+    engine.execute(insert(BotTime))
     text_commands = get_text_commands()
     environment = Environment()
     bot = Bot(

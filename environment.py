@@ -40,3 +40,5 @@ class Environment():
         data = json.loads(response.content)
         user_id = data["data"][0]["id"]
         return user_id
+
+env = Environment()

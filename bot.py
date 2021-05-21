@@ -112,7 +112,6 @@ class Bot():
         
 
     # insert data to SQLite db
-    from sqlalchemy import insert, select
     def store_command_data(self, user: str, command: str, is_custom: int):
         entry = {
             "user" : user,

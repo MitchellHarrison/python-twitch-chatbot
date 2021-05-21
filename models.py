@@ -77,3 +77,16 @@ class Followers(Base):
     username = Column("username", Text)
 
 
+class FeatureRequest(Base):
+    __tablename__ = "feature_requests"
+
+    id = Column("id", Integer, primary_key=True)
+    time = Column("time", DateTime)
+    user = Column("user", Text)
+    message = Column("message", Text)
+
+    def __init__(self): 
+        self.time = time
+        self.user = user
+        self.message = message
+

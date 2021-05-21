@@ -29,6 +29,7 @@ class Bot():
         self.irc_command(f"PASS oauth:{self.oauth_token}")
         self.irc_command(f"NICK {self.bot_name}")
         self.irc_command(f"JOIN #{self.channel}")        
+        self.irc_command(f"CAP REQ :twitch.tv/tags")
         self.send_message(self.channel, "I AM ALIVE!!")
         self.check_for_messages()
 
@@ -53,14 +54,21 @@ class Bot():
                 self.irc_command("PONG :tmi.twitch.tv")
                 
             for m in messages.split("\r\n"):
+                # print every message
+                print(m)
                 self.parse_message(m)
 
 
     # check for command being executed
     def parse_message(self, message: str):
         try:
+            # TODO: new parsing with split()
+
             # regex pattern
-            pat_message = re.compile(fr":(?P<user>.+)!.+#{self.channel} :(?P<text>.+)", flags=re.IGNORECASE)
+            pat_message = re.compile(
+                fr":(?P<user>.+)!.+#{self.channel} :(?P<text>.+)", 
+                flags=re.IGNORECASE
+            )
             
             # pull user and text from each message
             user = re.search(pat_message, message).group("user")
@@ -128,9 +136,14 @@ class Bot():
     def execute_command(self, user: str, command: str, message: str):
         # execute hard-coded command
         if command in self.commands.keys():
+            admin_commands = ["!addcommand", "!editcommand", "!delcommand"]
             self.commands[command].execute(user, message) 
             is_custom_command = 0 
             self.store_command_data(user, command, is_custom_command)
+
+            # refresh text commands dict if admin command used
+            if command in admin_commands:
+                self.text_commands = self.reload_text_commands()
 
         # execute custom text commands
         elif command in self.text_commands.keys():
@@ -140,8 +153,6 @@ class Bot():
             )
             is_custom_command = 1
             self.store_command_data(user, command, is_custom_command)
-        
-        self.text_commands = self.reload_text_commands()
 
 
     def reload_text_commands(self):

@@ -1,4 +1,3 @@
-import sqlite3
 from sqlalchemy import select, update, insert
 from bot import Bot
 from environment import Environment

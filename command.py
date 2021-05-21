@@ -1,13 +1,12 @@
 import requests
 import random
 import json
-import sqlite3
 from datetime import datetime
 from dateutil import relativedelta
 from abc import ABC, abstractmethod
-from sqlalchemy import select
+from sqlalchemy import select, insert, delete, update, func
 from database import engine, Session, Base
-from models import BotTime, Followers
+from models import BotTime, Followers, TextCommands, ChatMessages, CommandUse
 
 Base.metadata.create_all(bind=engine)
 session = Session()
@@ -47,20 +46,17 @@ class AddCommand(CommandBase):
             if command in self.bot.text_commands.keys():
                 self.bot.send_message(
                     self.bot.channel,
-                    f"That command doesn't exist, @{user}."
+                    f"That command already exists, {user}."
                 )
                 return
 
-            conn = sqlite3.connect("data.db")
-            cursor = conn.cursor()
-            entry = {
-                "command" : command,
-                "message" : result
-            }
-            with conn:
-                cursor.execute("INSERT INTO text_commands (command, message) VALUES (:command, :message);", entry)
-            cursor.close()
-            conn.close()
+            # TODO:
+            entry = {"command":command, "message":result}
+            engine.execute(
+                insert(TextCommands)
+                .values(entry)
+            )
+
             self.bot.send_message(
                 self.bot.channel,
                 f"{command} added successfully!"
@@ -86,27 +82,27 @@ class DeleteCommand(CommandBase):
 
             command = first_word if first_word.startswith("!") else "!" + first_word
 
-            conn = sqlite3.connect("data.db")
-            cursor = conn.cursor()
-            cursor.execute("SELECT command FROM text_commands;")
-            conn.commit()
-            current_commands = [c[0] for c in cursor.fetchall()]
+            # select all commands from TextCommands table
+            result = engine.execute(select(TextCommands.command)).fetchall()
+            current_commands = [c[0] for c in result]
+
             if command not in current_commands:
                 self.bot.send_message(
                     self.bot.channel,
-                    f"The {command} command doesn't exist, @{user}."
+                    f"The {command} command doesn't exist, {user}."
                 )
                 return
 
             entry = {"command": command}
 
-            cursor.execute(f"DELETE FROM text_commands WHERE command = (:command);", entry)
-            conn.commit()
-            cursor.close()
-            conn.close()
+            engine.execute(
+                delete(TextCommands)
+                .where(TextCommands.command == command)
+            )
+
             self.bot.send_message(
                 self.bot.channel,
-                f"!{command} command deleted, @{user}."
+                f"{command} command deleted, @{user}."
             )
 
 
@@ -122,10 +118,8 @@ class EditCommand(CommandBase):
             first_word = message.split()[1]
             command = first_word if first_word.startswith("!") else "!" + first_word
 
-            conn = sqlite3.connect("data.db")
-            cursor = conn.cursor()
-            cursor.execute("SELECT command FROM text_commands;")
-            current_commands = [c[0] for c in cursor.fetchall()]
+            result = engine.execute(select(TextCommands.command)).fetchall()
+            current_commands = [c[0] for c in result]
 
             if command not in current_commands:
                 self.bot.send_message(
@@ -135,17 +129,17 @@ class EditCommand(CommandBase):
                 return
 
             new_message = " ".join(message.split()[2:])
-            entry = {
-                "message": new_message,
-                "command": command
-            }
-            cursor.execute(f"UPDATE text_commands SET message = (:message) WHERE command = (:command);", entry)
-            conn.commit()
-            cursor.close()
-            conn.close()
+
+            # edit the message for a given command
+            engine.execute(
+                update(TextCommands)
+                .where(TextCommands.command == command)
+                .values(message=new_message)
+            )
+            
             self.bot.send_message(
                 self.bot.channel,
-                f"{command} command edit complete @{user}!"
+                f"{command} command edit complete {user}!"
             )
 
 
@@ -207,15 +201,14 @@ class CommandsCommand(CommandBase):
 
 
     def execute(self, user, message):
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor()
-        with conn:
-            cursor.execute("SELECT command FROM text_commands")
-            text_commands = [t[0] for t in cursor.fetchall()]
-        cursor.close()
-        conn.close()
+        result = engine.execute(select(TextCommands.command)).fetchall()
+        text_commands = [c[0] for c in result]
         hard_commands = [c.command_name for c in (s(self) for s in CommandBase.__subclasses__())]
         commands_str = ", ".join(text_commands) + ", " + ", ".join(hard_commands)
+
+        # TODO: hide admin commands
+        for comm in ["!addcommand", "!delcommand", "!editcommand"]:
+            commands_str.replace(comm+",", "")
 
         # check if commands fit in chat; dropping
         while len(commands_str) > 500:
@@ -227,7 +220,6 @@ class CommandsCommand(CommandBase):
             channel = self.bot.channel,
             message = commands_str
         )
-
 
 
 class FollowAgeCommand(CommandBase):
@@ -276,24 +268,16 @@ class BotTimeCommand(CommandBase):
 
 
     def execute(self, user, message):
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor()
+        # get most recent uptime
+        result = engine.execute(
+            select(BotTime.uptime)
+            .order_by(BotTime.id.desc())
+        ).fetchone()
+        uptime = result[0]
 
-        with conn:
-            cursor.execute(f"SELECT time FROM bot_logs;")
-            try:
-                time = cursor.fetchone()[0]
-            except TypeError as e:
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = "This command is broken. Yell at Mitch, not me."
-                )
-                return
-        cursor.close()
-        conn.close()
-        uptime = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
         now = datetime.now()
 
+        # get timedelta
         delta = relativedelta.relativedelta(now, uptime)
         uptime_stats = {
             "year": delta.years,
@@ -303,6 +287,15 @@ class BotTimeCommand(CommandBase):
             "minute": delta.minutes
         }
 
+        # send specific message if bot has been alive for under a minute
+        if all(v==0 for v in uptime_stats.values()):
+            self.bot.send_message(
+                channel = self.bot.channel,
+                message = f"Give me a minute, {user}! I just woke up!"
+            )
+            return
+
+        # build output message
         message = f"I have been alive for"
         for k,v in uptime_stats.items():
             if v > 0:
@@ -310,6 +303,7 @@ class BotTimeCommand(CommandBase):
                 if v > 1:
                     message += "s"
         message += "!"
+
         self.bot.send_message(
             channel = self.bot.channel,
             message = message
@@ -323,17 +317,15 @@ class RankCommand(CommandBase):
 
 
     def execute(self, user, message):
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor() 
         if len(message.split()) > 1:
             command = message.split()[1]
             # command use rank
             if not command.startswith("!"):
                 command = f"!{command}"
 
-            with conn:
-                cursor.execute("SELECT command FROM text_commands")
-                text_commands = [t[0] for t in cursor.fetchall()]
+            # get all text commands
+            result = engine.execute(select(TextCommands.command)).fetchall()
+            text_commands = [c[0] for c in result]
 
             commands = [*text_commands, *self.bot.commands] 
 
@@ -345,20 +337,14 @@ class RankCommand(CommandBase):
                 return
 
             # query database for number of times each user used a given command
-            with conn:
-                cursor.execute("""SELECT user
-                        FROM command_use
-                        WHERE command = :command
-                        GROUP BY user
-                        ORDER BY COUNT(user) DESC;
-                                """, 
-                                {"command": command}
-                        )
+            result = engine.execute(
+                select(CommandUse.user)
+                .where(CommandUse.command == command)
+                .group_by(CommandUse.user)
+                .order_by(func.count(CommandUse.user).desc())
+            )
+            users = [u[0] for u in result]
 
-                users = [u[0] for u in cursor.fetchall()]
-
-            cursor.close()
-            conn.close()
             try:
                 user_rank = users.index(user) + 1
             except ValueError:
@@ -375,24 +361,28 @@ class RankCommand(CommandBase):
 
         else:
             # get count of unique chatters from chat_messages table
-            with conn:
-                cursor.execute("""SELECT user 
-                        FROM chat_messages 
-                        GROUP BY user
-                        ORDER BY COUNT(user) DESC;
-                        """) 
-                chatters = [c[0] for c in cursor.fetchall()]
-            cursor.close()
-            conn.close()
+            result = engine.execute(
+                select(ChatMessages.user)
+                .group_by(ChatMessages.user)
+                .order_by(func.count(ChatMessages.user).desc())
+            )
+            chatters = [u[0] for u in result]
 
-            # find rank of a given user
-            user_rank = chatters.index(user) + 1
+            try:
+                # find rank of a given user
+                user_rank = chatters.index(user) + 1
 
-            # send the rank in chat
-            message = f"{user}, you are number {user_rank} out of {len(chatters)} chatters!"
-            self.bot.send_message(
+                # send the rank in chat
+                message = f"{user}, you are number {user_rank} out of {len(chatters)} chatters!"
+                self.bot.send_message(
+                        channel = self.bot.channel,
+                        message = message
+                    )
+
+            except ValueError:
+                self.bot.send_message(
                     channel = self.bot.channel,
-                    message = message
+                    message = f"{user}, I don't have you on my list. This is awkward..."
                 )
 
             
@@ -403,21 +393,17 @@ class FeatureRequestCommand(CommandBase):
 
 
     def execute(self, user, message):
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor()
-        
         entry = {
-                "time": str(datetime.now()), 
                 "user": user, 
                 "message": message
             }
-        with conn: 
-            cursor.execute("INSERT INTO feature_requests VALUES (:time, :user, :message)", entry)
-            conn.commit()
-        cursor.close()
-        conn.close()
+        engine.execute(
+            insert(FeatureRequests)
+            .values(entry)
+        )
+
         self.bot.send_message(
-                channel = self.bot.channel,
-                message = f"Got it! Thanks for your help, {user}!"
-            )
+            channel = self.bot.channel,
+            message = f"Got it! Thanks for your help, {user}!"
+        )
 

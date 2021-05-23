@@ -1,6 +1,6 @@
 from sqlalchemy import select, update, insert
 from bot import Bot
-from environment import Environment
+from environment import env
 from datetime import datetime
 from sqlalchemy import select, insert
 from database import Base, Session, engine
@@ -20,15 +20,14 @@ def main():
     # log bot startup time
     engine.execute(insert(BotTime))
     text_commands = get_text_commands()
-    environment = Environment()
     bot = Bot(
-        environment.irc_server,
-        environment.irc_port,
-        environment.oauth,
-        environment.bot_name,
-        environment.channel,
-        environment.user_id,
-        environment.client_id,
+        env.irc_server,
+        env.irc_port,
+        env.oauth,
+        env.bot_name,
+        env.channel,
+        env.user_id,
+        env.client_id,
         text_commands
     )
     bot.connect_to_channel()

@@ -6,7 +6,8 @@ from dateutil import relativedelta
 from abc import ABC, abstractmethod
 from sqlalchemy import select, insert, delete, update, func
 from database import engine, Session, Base
-from models import BotTime, Followers, TextCommands, ChatMessages, CommandUse
+from models import BotTime, Followers, TextCommands, ChatMessages, CommandUse, FeatureRequest
+from environment import env
 
 Base.metadata.create_all(bind=engine)
 session = Session()
@@ -38,6 +39,8 @@ class AddCommand(CommandBase):
 
 
     def execute(self, user, message):
+        # only bot owner can run
+        # TODO: allow mods to run
         if user == self.bot.channel:
             first_word = message.split()[1]
             command = first_word if first_word.startswith("!") else "!" + first_word
@@ -50,7 +53,6 @@ class AddCommand(CommandBase):
                 )
                 return
 
-            # TODO:
             entry = {"command":command, "message":result}
             engine.execute(
                 insert(TextCommands)
@@ -70,6 +72,8 @@ class DeleteCommand(CommandBase):
 
 
     def execute(self, user, message):
+        # only channel owner can use
+        # TODO: allow mods to use
         if user == self.bot.channel:
             try:
                 first_word = message.split()[1]
@@ -114,6 +118,8 @@ class EditCommand(CommandBase):
 
 
     def execute(self, user, message):
+        # only channel owner can run
+        # TODO: allow mods to run
         if user == self.bot.channel:
             first_word = message.split()[1]
             command = first_word if first_word.startswith("!") else "!" + first_word
@@ -406,4 +412,74 @@ class FeatureRequestCommand(CommandBase):
             channel = self.bot.channel,
             message = f"Got it! Thanks for your help, {user}!"
         )
+
+
+# TODO: !lurk command to thank user for lurking with their name
+class LurkCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!lurk"
+
+    
+    def execute(self, user, message):
+        self.bot.send_message(
+            channel = self.bot.channel,
+            message = f"Don't worry {user}, we got mad love for the lurkers! <3"
+        )
+        
+
+# TODO: !so command to shout out a user and link their channel
+# user submitting the command can't shoutout themselves
+# verify that shouted user is real
+class ShoutoutCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!so"
+
+
+    def execute(self, user, message):
+        # check if user shouting out no one
+        if len(message.split()) < 2:
+            self.bot.send_message(
+                channel = self.bot.channel,
+                message = f"I can't shoutout no one, {user}!"
+            )
+
+        else:
+            so_user = message.split()[1].strip("@")
+
+            # correct for users trying to shout themselves out
+            if user.lower() == so_user.lower():
+                self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = f"You can't shoutout yourself, {user}!"
+                )
+                return
+
+            # api only returns users that have streamed in the past six months
+            url = f"https://api.twitch.tv/helix/search/channels?query={so_user}"
+            headers = {
+                "client-id" : env.client_id,
+                "authorization" : f"Bearer {env.bearer}"
+            }
+
+            response = requests.get(url, headers=headers)
+            data = json.loads(response.content)["data"][0]
+            so_display_name = data["display_name"]
+            so_login = data["broadcaster_login"]
+
+            # validates that user is real
+            if so_user.lower() == so_login:
+                so_url = f"https://twitch.tv/{so_login}"
+                self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = f"Shoutout to {so_display_name}! Check them out here! {so_url}"
+                )
+
+            # user could not exist or not have streamed in 6 months
+            else:
+                self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = f"{so_user} isn't a frequent streamer, {user}."
+                )
 

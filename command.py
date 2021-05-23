@@ -414,7 +414,6 @@ class FeatureRequestCommand(CommandBase):
         )
 
 
-# TODO: !lurk command to thank user for lurking with their name
 class LurkCommand(CommandBase):
     @property
     def command_name(self):
@@ -428,9 +427,6 @@ class LurkCommand(CommandBase):
         )
         
 
-# TODO: !so command to shout out a user and link their channel
-# user submitting the command can't shoutout themselves
-# verify that shouted user is real
 class ShoutoutCommand(CommandBase):
     @property
     def command_name(self):

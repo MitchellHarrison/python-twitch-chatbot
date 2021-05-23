@@ -6,7 +6,7 @@ from dateutil import relativedelta
 from abc import ABC, abstractmethod
 from sqlalchemy import select, insert, delete, update, func
 from database import engine, Session, Base
-from models import BotTime, Followers, TextCommands, ChatMessages, CommandUse
+from models import BotTime, Followers, TextCommands, ChatMessages, CommandUse, FeatureRequests
 
 Base.metadata.create_all(bind=engine)
 session = Session()
@@ -407,3 +407,11 @@ class FeatureRequestCommand(CommandBase):
             message = f"Got it! Thanks for your help, {user}!"
         )
 
+
+# TODO: !lurk thanks people by name for lurking
+
+
+# TODO: !so command links someone's Twitch channel by using their name to build their URL
+# should require a second word after "so!" to prevent people shouting themselves out
+# should check to make sure that the user name in question isn't the senders
+# should verify that the person being shouted out actually exists

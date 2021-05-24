@@ -67,6 +67,7 @@ class Environment():
         bearer = result[0]
         return bearer
 
+
     def get_user_id(self) -> str:
         url = f"https://api.twitch.tv/helix/users?login={self.channel}"
         headers = {
@@ -78,6 +79,6 @@ class Environment():
         user_id = data["data"][0]["id"]
         return user_id
 
+
 env = Environment()
-env.get_bearer()
 

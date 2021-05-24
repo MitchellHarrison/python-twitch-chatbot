@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Integer, Text, DateTime, Column
+from sqlalchemy import Integer, Text, DateTime, Column
 from datetime import datetime
 from database import Base
 
@@ -89,4 +89,16 @@ class FeatureRequest(Base):
         self.time = time
         self.user = user
         self.message = message
+
+
+class Tokens(Base):
+    __tablename__ = "tokens"
+
+    id = Column("id", Integer, primary_key=True)
+    name = Column("name", Text, unique=True)
+    token = Column("token", Text)
+    
+    def __init__(self):
+        self.name = name
+        self.token = token
 

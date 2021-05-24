@@ -404,7 +404,7 @@ class FeatureRequestCommand(CommandBase):
                 "message": message
             }
         engine.execute(
-            insert(FeatureRequests)
+            insert(FeatureRequest)
             .values(entry)
         )
 
@@ -441,6 +441,7 @@ class ShoutoutCommand(CommandBase):
                 message = f"I can't shoutout no one, {user}!"
             )
 
+        # if shouting someone
         else:
             so_user = message.split()[1].strip("@")
 
@@ -456,7 +457,7 @@ class ShoutoutCommand(CommandBase):
             url = f"https://api.twitch.tv/helix/search/channels?query={so_user}"
             headers = {
                 "client-id" : env.client_id,
-                "authorization" : f"Bearer {env.bearer}"
+                "authorization" : f"Bearer {env.get_bearer()}"
             }
 
             response = requests.get(url, headers=headers)

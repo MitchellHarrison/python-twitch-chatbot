@@ -209,7 +209,9 @@ class CommandsCommand(CommandBase):
     def execute(self, user, message):
         result = engine.execute(select(TextCommands.command)).fetchall()
         text_commands = [c[0] for c in result]
+        print(text_commands)
         hard_commands = [c.command_name for c in (s(self) for s in CommandBase.__subclasses__())]
+        print(hard_commands)
         commands_str = ", ".join(text_commands) + ", " + ", ".join(hard_commands)
 
         # TODO: hide admin commands
@@ -277,7 +279,7 @@ class BotTimeCommand(CommandBase):
         # get most recent uptime
         result = engine.execute(
             select(BotTime.uptime)
-            .order_by(BotTime.id.desc())
+            .order_by(BotTime.id_.desc())
         ).fetchone()
         uptime = result[0]
 
@@ -464,8 +466,11 @@ class ShoutoutCommand(CommandBase):
             data = json.loads(response.content)["data"][0]
             so_display_name = data["display_name"]
             so_login = data["broadcaster_login"]
+            print(so_user.lower())
+            print(so_login)
 
             # validates that user is real
+            # TODO: can't find absenth762 specifically
             if so_user.lower() == so_login:
                 so_url = f"https://twitch.tv/{so_login}"
                 self.bot.send_message(

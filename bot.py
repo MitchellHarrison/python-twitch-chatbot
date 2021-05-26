@@ -62,32 +62,38 @@ class Bot():
     # check for command being executed
     def parse_message(self, message: str):
         try:
-            # TODO: new parsing with split()
-
             # regex pattern
             pat_message = re.compile(
-                fr":(?P<user>.+)!.+#{self.channel} :(?P<text>.+)", 
+                fr"badges=(?P<badges>[^;]*).+emotes=(?P<emotes>[^;]*);.+user-id=(?P<user_id>[\d]+).+:(?P<username>[\d\w]+)![^:]+:(?P<text>.*)",
                 flags=re.IGNORECASE
             )
-            
-            # pull user and text from each message
-            user = re.search(pat_message, message).group("user")
-            message = re.search(pat_message, message).group("text")
+
+            # get all message data as dict by group name
+            message_data = pat_message.search(message).groupdict() 
+            print(message_data)
+
+            # convert badges string to list of badges
+            badges_list = re.sub("/\d+,?", " ", message_data["badges"]).split() 
+            print(badges_list)
+
+            text = message_data["text"]
+            user = message_data["username"]
+            chatter_id = message_data["user_id"]
 
             # respond to server pings
-            if message.lower().startswith("ping"):
+            if text.lower().startswith("ping"):
                 print("ping received")
                 self.irc_command("PONG")
                 print("pong sent")
 
             # check for commands being used
-            if message.startswith("!"):
-                command = message.split()[0].lower()
+            if text.startswith("!"):
+                command = text.split()[0].lower()
                 if command not in self.text_commands and command not in self.commands:
                     self.store_wrong_command(user, command)
                 else:
-                    self.execute_command(user, command, message)
-            self.store_message_data(user, message)
+                    self.execute_command(user, command, text)
+            self.store_message_data(user, chatter_id, text)
 
         except AttributeError:
             pass
@@ -107,9 +113,10 @@ class Bot():
         
 
     # insert data to SQLite db
-    def store_message_data(self, user: str, message: str):
+    def store_message_data(self, user: str, user_id: str, message: str) -> None:
         entry = {
-            "user" : user,
+            "username" : user,
+            "user_id" : user_id,
             "message" : message
         }
         

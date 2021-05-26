@@ -23,6 +23,9 @@ class Environment():
         self.irc_port = 6667
         self.irc_server = "irc.twitch.tv"
 
+        # start with new bearer
+        self.refresh_bearer()
+
         self.user_id = self.get_user_id()
 
     

@@ -19,6 +19,7 @@ def main():
     session = Session()
     # log bot startup time
     engine.execute(insert(BotTime))
+
     text_commands = get_text_commands()
     bot = Bot(
         env.irc_server,

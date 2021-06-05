@@ -32,6 +32,34 @@ class CommandBase(ABC):
         return self.command_name
 
 
+    def get_commands(self):
+        # get all text commands
+        result = engine.execute(select(TextCommands.command)).fetchall()
+        text_commands = [c[0] for c in result]
+        return [*text_commands, *self.bot.commands] 
+
+
+    def get_command_users(self, command):
+        # query database for number of times each user used a given command
+        result = engine.execute(
+            select(CommandUse.user)
+            .where(CommandUse.command == command)
+            .group_by(CommandUse.user)
+            .order_by(func.count(CommandUse.user).desc())
+        )
+        return [u[0] for u in result]
+
+
+    def get_top_chatters(self):
+        # get count of unique chatters from chat_messages table
+        result = engine.execute(
+            select(ChatMessages.username)
+            .group_by(ChatMessages.username)
+            .order_by(func.count(ChatMessages.username).desc())
+        )
+        return [u[0] for u in result]
+
+
 class AddCommand(CommandBase):
     @property
     def command_name(self):
@@ -331,50 +359,34 @@ class RankCommand(CommandBase):
             if not command.startswith("!"):
                 command = f"!{command}"
 
-            # get all text commands
-            result = engine.execute(select(TextCommands.command)).fetchall()
-            text_commands = [c[0] for c in result]
-
-            commands = [*text_commands, *self.bot.commands] 
+            commands = self.get_commands()
 
             if command not in commands:
                 self.bot.send_message(
-                        channel = self.bot.channel,
-                        message = f"That is not a command that I have. Sorry!"
-                    )
+                    channel = self.bot.channel,
+                    message = f"That is not a command that I have. Sorry!"
+                )
                 return
 
             # query database for number of times each user used a given command
-            result = engine.execute(
-                select(CommandUse.user)
-                .where(CommandUse.command == command)
-                .group_by(CommandUse.user)
-                .order_by(func.count(CommandUse.user).desc())
-            )
-            users = [u[0] for u in result]
+            users = self.get_command_users(command)
 
             try:
                 user_rank = users.index(user) + 1
             except ValueError:
                 self.bot.send_message(
-                        channel = self.bot.channel,
-                        message = f"{user}, you haven't used that command since I've been listening. Sorry!"
-                    )
+                    channel = self.bot.channel,
+                    message = f"{user}, you haven't used that command since I've been listening. Sorry!"
+                )
                 return
             message = f"{user}, you are the number {user_rank} user of the {command} command out of {len(users)} users."
             self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = message
-                    )
+                channel = self.bot.channel,
+                message = message
+            )
 
         else:
-            # get count of unique chatters from chat_messages table
-            result = engine.execute(
-                select(ChatMessages.user)
-                .group_by(ChatMessages.user)
-                .order_by(func.count(ChatMessages.user).desc())
-            )
-            chatters = [u[0] for u in result]
+            chatters = self.get_top_chatters()
 
             try:
                 # find rank of a given user
@@ -383,9 +395,9 @@ class RankCommand(CommandBase):
                 # send the rank in chat
                 message = f"{user}, you are number {user_rank} out of {len(chatters)} chatters!"
                 self.bot.send_message(
-                        channel = self.bot.channel,
-                        message = message
-                    )
+                    channel = self.bot.channel,
+                    message = message
+                )
 
             except ValueError:
                 self.bot.send_message(
@@ -484,4 +496,42 @@ class ShoutoutCommand(CommandBase):
                     channel = self.bot.channel,
                     message = f"{so_user} isn't a frequent streamer, {user}."
                 )
+
+
+# TODO: !leaderboard command
+class LeaderboardCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!leaderboard"
+
+
+    def execute(self, user, message):
+        if len(message.split()) > 1:
+            # command-specific leaderboard
+            command = message.split()[1]
+            if not command.startswith("!"):
+                command = "!"+command
+            
+            commands = self.get_commands()
+            if command not in commands:
+                self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = f"Sorry {user}, that command doesn't exist!"
+                )
+                return
+
+            users = self.get_command_users(command)
+
+        else:
+            users = self.get_top_chatters()
+            
+        top_n = 5
+        leaders = users[:top_n]
+        message_ranks = [f"{i}. {user}" for i,user in enumerate(leaders, start=1)]
+        print(message_ranks)
+
+        self.bot.send_message(
+            channel = self.bot.channel,
+            message = ", ".join(message_ranks)
+        )
 

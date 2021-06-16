@@ -5,7 +5,6 @@ from database import Base
 class ChatMessages(Base):
     __tablename__ = "chat_messages"
 
-    # TODO: rename all "id" to something less built-in-y
     id_ = Column("id", Integer, primary_key=True)
     time = Column("time", DateTime, default=datetime.now())
     username = Column("username", Text)
@@ -118,4 +117,24 @@ class Tokens(Base):
     def __init__(self):
         self.name = name
         self.token = token
+
+
+class Subscriptions(Base):
+    __tablename__ = "subscriptions"
+
+    id_ = Column("id", Integer, primary_key=True)
+    sub_name = Column("sub_name", Text, unique=True)
+    sub_id = Column("sub_id", Text, unique=True)
+    sub_type = Column("sub_type", Text)
+
+    def __init__(self):
+        self.sub_name = sub_name
+        self.sub_id = sub_id
+        self.sub_type = sub_type
+
+
+# TODO: cp usage table
+#class ChannelPointRedemptions(Base):
+#    __tablename__ = "channel_point_redemptions"
+
 

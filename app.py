@@ -221,7 +221,8 @@ def handle_follower():
 
     # if message is a follower notification 
     elif message_type == "notification":
-        # handle new follower
+        # bot sends thank you message
+        # change room light color
         pass
 
     else:
@@ -250,6 +251,8 @@ def handle_stream_info_update():
 
     return Response(status=200)
 
+
+# run app
 if __name__ == "__main__":
     app.run(ssl_context="adhoc")
 

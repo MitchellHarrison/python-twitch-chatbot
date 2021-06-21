@@ -478,8 +478,6 @@ class ShoutoutCommand(CommandBase):
             data = json.loads(response.content)["data"][0]
             so_display_name = data["display_name"]
             so_login = data["broadcaster_login"]
-            print(so_user.lower())
-            print(so_login)
 
             # validates that user is real
             # TODO: can't find absenth762 specifically

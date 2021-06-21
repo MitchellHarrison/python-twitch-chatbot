@@ -2,6 +2,7 @@ import re
 import socket
 import command
 from datetime import datetime
+from colorama import Fore
 from sqlalchemy import insert, select
 from database import Session, Base, engine
 from models import ChatMessages, CommandUse, FalseCommands, BotTime, TextCommands
@@ -54,46 +55,53 @@ class Bot():
                 self.irc_command("PONG :tmi.twitch.tv")
                 
             for m in messages.split("\r\n"):
-                # print every message
-                print(m)
                 self.parse_message(m)
 
 
     # check for command being executed
     def parse_message(self, message: str):
         try:
-            # regex pattern
-            pat_message = re.compile(
-                fr"badges=(?P<badges>[^;]*).+emotes=(?P<emotes>[^;]*);.+user-id=(?P<user_id>[\d]+).+:(?P<username>[\d\w]+)![^:]+:(?P<text>.*)",
-                flags=re.IGNORECASE
-            )
+            if not message.startswith("PING :"):
+                # regex pattern
+                pat_message = re.compile(
+                    fr"badges=(?P<badges>[^;]*).*color=(?P<color>[^;]*).*display-name=(?P<display_name>[^;]*).*emotes=(?P<emotes>[^;]*);.+user-id=(?P<user_id>[\d]+).+:(?P<username>[\d\w]+)![^:]+:(?P<text>.*)",
+                    flags=re.IGNORECASE
+                )
 
-            # get all message data as dict by group name
-            message_data = pat_message.search(message).groupdict() 
-            print(message_data)
+                # get all message data as dict by group name
+                message_data = pat_message.search(message).groupdict() 
 
-            # convert badges string to list of badges
-            badges_list = re.sub("/\d+,?", " ", message_data["badges"]).split() 
-            print(badges_list)
+                # convert badges string to list of badges
+                badges_list = re.sub("/\d+,?", " ", message_data["badges"]).split() 
 
-            text = message_data["text"]
-            user = message_data["username"]
-            chatter_id = message_data["user_id"]
+                text = message_data["text"]
+                user = message_data["username"]
+                display_name = message_data["display_name"]
+                chatter_id = message_data["user_id"]
+                user_color = message_data["color"].lstrip("#")
 
-            # respond to server pings
-            if text.lower().startswith("ping"):
-                print("ping received")
-                self.irc_command("PONG")
-                print("pong sent")
-
-            # check for commands being used
-            if text.startswith("!"):
-                command = text.split()[0].lower()
-                if command not in self.text_commands and command not in self.commands:
-                    self.store_wrong_command(user, command)
+                # set color of username for display in terminal
+                default_color = (56, 146, 66)
+                if not user_color:
+                    rgb = default_color
                 else:
-                    self.execute_command(user, command, text)
-            self.store_message_data(user, chatter_id, text)
+                    rgb = tuple(int(user_color[i:i+2], 16) for i in (0,2,4))
+                    
+                # print colored chat message to terminal
+                print(f"\033[38;2;{rgb[0]};{rgb[1]};{rgb[2]}m" + f"{display_name}" + "\033[38;2;255;255;255m", f"{text}\n")
+
+                # respond to server pings
+                if text.lower().startswith("ping"):
+                    self.irc_command("PONG")
+
+                # check for commands being used
+                if text.startswith("!"):
+                    command = text.split()[0].lower()
+                    if command not in self.text_commands and command not in self.commands:
+                        self.store_wrong_command(user, command)
+                    else:
+                        self.execute_command(user, command, text)
+                self.store_message_data(user, chatter_id, text)
 
         except AttributeError:
             pass

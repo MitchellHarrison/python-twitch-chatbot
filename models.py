@@ -133,6 +133,15 @@ class Subscriptions(Base):
         self.sub_type = sub_type
 
 
+# TODO: (in progress) viewers per minute
+class Viewership(Base):
+    __tablename__ = "viewership"
+
+    id_ = Column("id", Integer, primary_key=True)
+    stream_id = Column("stream_id", Integer)
+    stream_title = Column("stream_title", Text)
+
+
 # TODO: cp usage table
 #class ChannelPointRedemptions(Base):
 #    __tablename__ = "channel_point_redemptions"

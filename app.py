@@ -12,7 +12,7 @@ from sqlalchemy import insert, update
 from models import Subscriptions
 
 SUB_URL = "https://api.twitch.tv/helix/eventsub/subscriptions"
-CALLBACK = "https://4f4487690d53.ngrok.io"
+CALLBACK = "https://74014203e3bf.ngrok.io"
 SECRET = "abc1234def"
 
 Base.metadata.create_all(bind=engine)
@@ -50,24 +50,21 @@ def validate_headers(headers:dict) -> bool:
     return signature == expected
 
 
-def request_user_auth():
+# TODO: re-establish user access with correct scopes
+def request_user_auth(env=env):
     url = "https://id.twitch.tv/oauth2/authorize"
 
-    # list of token scopes
-    scopes = [
-        "channel:read:redemptions",
-        "bits:read",
-        "channel:read:subscriptions",
-        "channel:moderate"
-    ]
-
+    # create appropriate url for authorizing permissions
     params = {
         "client_id": env.client_id,
-        "redirect_uri": f"https://localhost:5000/authorize",
+        "redirect_uri": "https://localhost:5000/authorize",
         "response_type": "code",
-        "scopes": " ".join(scopes),
+        "scope": " ".join(env.scopes),
+        "force_verify": "true"
     }
     get_url = url + "?" + urllib.parse.urlencode(params)
+
+    # open browser window for user to accept required permissions
     webbrowser.open(get_url)
 
 
@@ -135,6 +132,20 @@ def get_subscriptions(env=env, url=SUB_URL) -> dict:
     return result
 
 
+def refresh_user_access(env=env) -> None:
+    base_url = "https://id.twitch.tv/oauth2/token"
+    params = {
+        "client_id": env.client_id,
+        "client_secret": env.client_secret,
+        "grant_type": "refresh_token",
+        "refresh_token": env.get_refresh_token()
+    }
+    if scopes:
+        params["scopes"] = " ".join(env.scopes)
+    url = base_url + "?" + urllib.parse.urlencode(params)
+    result = requests.post(url)
+
+
 # default route
 @app.route("/")
 def hello_chat():
@@ -177,12 +188,18 @@ def authorize():
     response = requests.post(url=url, params=params)
 
     data = response.json()
-    token = data["access_token"]
+
+    user_access = data["access_token"]
+    refresh_token = data["refresh_token"]
 
     # write user access token to DB
-    env.set_user_access(token)
-    print("ACCESS TOKEN WRITTEN")
-        
+    env.set_user_access(user_access)
+    print("USER ACCESS TOKEN WRITTEN")
+
+    # write refresh token
+    env.set_refresh_token(refresh_token)     
+    print("REFRESH TOKEN WRITTEN")
+
     return Response(status=200)
 
 
@@ -200,7 +217,7 @@ def handle_cp():
 
     elif message_type == "notification":
         # handle new channel point redemption
-        pass
+        print("CHANNEL POINTS WERE REDEEMED!!")
 
     else: 
         print(flask_request.json)
@@ -222,6 +239,7 @@ def handle_follower():
     # if message is a follower notification 
     elif message_type == "notification":
         # bot sends thank you message
+        # add new follower to followers table
         # change room light color
         pass
 
@@ -254,7 +272,7 @@ def handle_stream_info_update():
 
 # run app
 if __name__ == "__main__":
-    app.run(ssl_context="adhoc")
+    app.run(ssl_context="adhoc", debug=True)
 
 
 # stream goes online
@@ -279,7 +297,7 @@ def handle_stream_online():
 
 # stream goes offline
 @app.route("/event/stream_offline", methods=["POST"])
-def handle_stream_online():
+def handle_stream_offline():
     headers = flask_request.headers
     message_type = headers["Twitch-Eventsub-Message-Type"]
 
@@ -289,7 +307,10 @@ def handle_stream_online():
 
     elif message_type == "notification":
         # handle steam info update
-        pass
+        print("A NEW FOLLOWER APPEARS")
+        data = flask_request.json
+        username = data["event"]["user_name"]
+        print(f"New follower is {username}!")
 
     else:
         print(flask_request.json)

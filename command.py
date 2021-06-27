@@ -177,6 +177,7 @@ class EditCommand(CommandBase):
             )
 
 
+# check joke API for joke of length that fits in a chat message
 class JokeCommand(CommandBase):
     @property
     def command_name(self):
@@ -184,17 +185,18 @@ class JokeCommand(CommandBase):
 
 
     def execute(self, user, message):
+        max_message_len = 500
         url = "https://icanhazdadjoke.com/"
         headers = {"accept" : "application/json"}
         for _ in range(10):
             result = requests.get(url, headers = headers).json()
             joke = result["joke"]
-            if len(joke) <= 500:
+            if len(joke) <= max_message_len:
                 self.bot.send_message(
                     channel = self.bot.channel,
                     message = joke
                 )
-                break
+                return
         self.bot.send_message(
             channel = self.bot.channel,
             message = f"I'm sorry! I couldn't find a short enough joke. :("
@@ -222,6 +224,7 @@ class PoemCommand(CommandBase):
                     channel = self.bot.channel,
                     message = poem
                 )
+                return
         self.bot.send_message(
             channel = self.bot.channel,
             message = f"@{user}, I couldn't find a short enough poem. I'm sorry. :("
@@ -237,9 +240,7 @@ class CommandsCommand(CommandBase):
     def execute(self, user, message):
         result = engine.execute(select(TextCommands.command)).fetchall()
         text_commands = [c[0] for c in result]
-        print(text_commands)
         hard_commands = [c.command_name for c in (s(self) for s in CommandBase.__subclasses__())]
-        print(hard_commands)
         commands_str = ", ".join(text_commands) + ", " + ", ".join(hard_commands)
 
         # TODO: hide admin commands
@@ -258,43 +259,52 @@ class CommandsCommand(CommandBase):
         )
 
 
-class FollowAgeCommand(CommandBase):
-    @property
-    def command_name(self):
-        return "!followage"
-
-
-    def execute(self, user, message):
-        if len(message.split()) > 1:
-            user = message.split()[1].strip("@").lower()
-
-        user_entry = engine.execute(
-            select(Followers.time)
-            .where(Followers.username == user)
-        ).fetchone()
-        follow_time = user_entry[0]
-        now = datetime.now()
-
-        delta = relativedelta.relativedelta(now, follow_time)
-        follow_stats = {
-            "year": delta.years,
-            "month": delta.months,
-            "day": delta.days,
-            "hour": delta.hours,
-            "minute": delta.minutes
-        }
-
-        message = f"{user} has been following for"
-        for k,v in follow_stats.items():
-            if v > 0:
-                message += f" {v} {k}"
-                if v > 1:
-                    message += "s"
-        message += "!"
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = message
-        )
+# TODO: fill follower table with new script, update with eventsub
+#class FollowAgeCommand(CommandBase):
+#    @property
+#    def command_name(self):
+#        return "!followage"
+#
+#
+#    def execute(self, user, message):
+#        if len(message.split()) > 1:
+#            user = message.split()[1].strip("@").lower()
+#
+#        # get user's follow time
+#        user_entry = engine.execute(
+#            select(Followers.time)
+#            .where(Followers.username == user)
+#        ).fetchone()
+#
+#        follow_time = user_entry[0]
+#        
+#        # current time
+#        now = datetime.now()
+#
+#        # get time delta
+#        delta = relativedelta.relativedelta(now, follow_time)
+#        follow_stats = {
+#            "year": delta.years,
+#            "month": delta.months,
+#            "day": delta.days,
+#            "hour": delta.hours,
+#            "minute": delta.minutes
+#        }
+#
+#        # create message
+#        message = f"{user} has been following for"
+#        for k,v in follow_stats.items():
+#            if v > 0:
+#                message += f" {v} {k}"
+#                if v > 1:
+#                    message += "s"
+#        message += "!"
+#
+#        # send message
+#        self.bot.send_message(
+#            channel = self.bot.channel,
+#            message = message
+#        )
 
 
 class BotTimeCommand(CommandBase):
@@ -364,7 +374,7 @@ class RankCommand(CommandBase):
             if command not in commands:
                 self.bot.send_message(
                     channel = self.bot.channel,
-                    message = f"That is not a command that I have. Sorry!"
+                    message = f"I don't have a {command} command! Sorry!"
                 )
                 return
 

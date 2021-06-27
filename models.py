@@ -84,6 +84,7 @@ class BotTime(Base):
         self.uptime = uptime
 
 
+# list of followers by user ID and follow time
 class Followers(Base):
     __tablename__ = "followers"
 
@@ -91,6 +92,11 @@ class Followers(Base):
     time = Column("time", DateTime)
     user_id = Column("user_id", Integer)
     username = Column("username", Text)
+
+    def __init__(self):
+        self.time = time
+        self.user_id = user_id
+        self.username = username
 
 
 class FeatureRequest(Base):
@@ -139,8 +145,17 @@ class Viewership(Base):
 
     id_ = Column("id", Integer, primary_key=True)
     stream_id = Column("stream_id", Integer)
-    stream_title = Column("stream_title", Text)
+    title = Column("title", Text)
+    category_id = Column("game_id", Text)
+    category = Column("game_name", Text)
+    viewers = Column("viewer_count", Integer)
 
+    def __init__(self):
+        self.stream_id = stream_id
+        self.title = title
+        self.game_id = game_id
+        self.game = game
+        self.viewer_count = viewer_count
 
 # TODO: cp usage table
 #class ChannelPointRedemptions(Base):

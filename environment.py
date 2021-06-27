@@ -19,6 +19,12 @@ class Environment():
         self.client_secret = os.getenv("CLIENT_SECRET")
         self.oauth = os.getenv("OAUTH_TOKEN")
 
+        self.scopes = [
+            "bits:read",
+            "channel:read:redemptions",
+            "channel:read:subscriptions"
+        ]
+
         # these are pre-defined
         self.irc_port = 6667
         self.irc_server = "irc.twitch.tv"
@@ -29,6 +35,7 @@ class Environment():
 
         self.user_id = self.get_user_id()
         self.app_access = self.get_app_access()
+        self.refresh_token = self.get_refresh_token()
 
     
     # get new bearer token
@@ -123,6 +130,7 @@ class Environment():
         return token
 
 
+    # TODO: use longer sql statement to update if exists
     def set_user_access(self, token:str) -> None:
         # delete old token
         engine.execute(
@@ -149,6 +157,33 @@ class Environment():
         token = result[0]
         return token
 
+
+    # TODO: use longer sql statement to update if exists
+    def set_refresh_token(self, token) -> None:
+        # del old token
+        engine.execute(
+            delete(Tokens)
+            .where(Tokens.name=="Refresh")
+        )
+
+        # write new token
+        entry = {
+            "name": "Refresh",
+            "token": token
+        }
+        engine.execute(
+            insert(Tokens)
+            .values(entry)
+        )
+
+
+    def get_refresh_token(self) -> str:
+        result = engine.execute(
+            select(Tokens.token)
+            .where(Tokens.name=="Refresh")
+        ).fetchone()
+        token = result[0]
+        return token
 
 env = Environment()
 

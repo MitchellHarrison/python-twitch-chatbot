@@ -19,6 +19,7 @@ Base.metadata.create_all(bind=engine)
 app = Flask(__name__)
 
 
+# TODO: values aren't matching expected
 # get sha256 value from headers
 def get_secret(headers:list) -> str:
     message_id = headers["Twitch-Eventsub-Message-Id"]

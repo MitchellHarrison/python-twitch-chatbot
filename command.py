@@ -66,10 +66,9 @@ class AddCommand(CommandBase):
         return "!addcommand"
 
 
-    def execute(self, user, message):
-        # only bot owner can run
-        # TODO: allow mods to run
-        if user == self.bot.channel:
+    def execute(self, user, message, badges):
+        # only mods can run this command
+        if "mod" in badges:
             first_word = message.split()[1]
             command = first_word if first_word.startswith("!") else "!" + first_word
             result = " ".join(message.split()[2:])
@@ -99,10 +98,9 @@ class DeleteCommand(CommandBase):
         return "!delcommand"
 
 
-    def execute(self, user, message):
-        # only channel owner can use
-        # TODO: allow mods to use
-        if user == self.bot.channel:
+    def execute(self, user, message, badges):
+        # only mods can run this command
+        if "mod" in badges:
             try:
                 first_word = message.split()[1]
             except IndexError:
@@ -145,10 +143,9 @@ class EditCommand(CommandBase):
         return "!editcommand"
 
 
-    def execute(self, user, message):
-        # only channel owner can run
-        # TODO: allow mods to run
-        if user == self.bot.channel:
+    def execute(self, user, message, badges):
+        # only mods can run this command
+        if "mod" in badges:
             first_word = message.split()[1]
             command = first_word if first_word.startswith("!") else "!" + first_word
 
@@ -184,7 +181,7 @@ class JokeCommand(CommandBase):
         return "!joke"
 
 
-    def execute(self, user, message):
+    def execute(self, user, message, badges):
         max_message_len = 500
         url = "https://icanhazdadjoke.com/"
         headers = {"accept" : "application/json"}
@@ -209,7 +206,7 @@ class PoemCommand(CommandBase):
         return "!poem"
 
 
-    def execute(self, user, message):
+    def execute(self, user, message, badges):
         num_lines = 4
         url = f"https://poetrydb.org/linecount/{num_lines}/lines"
         result = requests.get(url)
@@ -237,7 +234,7 @@ class CommandsCommand(CommandBase):
         return "!commands"
 
 
-    def execute(self, user, message):
+    def execute(self, user, message, badges):
         result = engine.execute(select(TextCommands.command)).fetchall()
         text_commands = [c[0] for c in result]
         hard_commands = [c.command_name for c in (s(self) for s in CommandBase.__subclasses__())]
@@ -266,7 +263,7 @@ class CommandsCommand(CommandBase):
 #        return "!followage"
 #
 #
-#    def execute(self, user, message):
+#    def execute(self, user, message, badges):
 #        if len(message.split()) > 1:
 #            user = message.split()[1].strip("@").lower()
 #
@@ -313,7 +310,7 @@ class BotTimeCommand(CommandBase):
         return "!bottime"
 
 
-    def execute(self, user, message):
+    def execute(self, user, message, badges):
         # get most recent uptime
         result = engine.execute(
             select(BotTime.uptime)
@@ -362,7 +359,7 @@ class RankCommand(CommandBase):
         return "!rank"
 
 
-    def execute(self, user, message):
+    def execute(self, user, message, badges):
         if len(message.split()) > 1:
             command = message.split()[1]
             # command use rank
@@ -422,7 +419,7 @@ class FeatureRequestCommand(CommandBase):
         return "!featurerequest"
 
 
-    def execute(self, user, message):
+    def execute(self, user, message, badges):
         entry = {
                 "user": user, 
                 "message": " ".join(message.split()[1:])
@@ -444,7 +441,7 @@ class LurkCommand(CommandBase):
         return "!lurk"
 
     
-    def execute(self, user, message):
+    def execute(self, user, message, badges):
         self.bot.send_message(
             channel = self.bot.channel,
             message = f"Don't worry {user}, we got mad love for the lurkers! <3"
@@ -457,7 +454,7 @@ class ShoutoutCommand(CommandBase):
         return "!so"
 
 
-    def execute(self, user, message):
+    def execute(self, user, message, badges):
         # check if user shouting out no one
         if len(message.split()) < 2:
             self.bot.send_message(
@@ -513,7 +510,7 @@ class LeaderboardCommand(CommandBase):
         return "!leaderboard"
 
 
-    def execute(self, user, message):
+    def execute(self, user, message, badges):
         if len(message.split()) > 1:
             # command-specific leaderboard
             command = message.split()[1]

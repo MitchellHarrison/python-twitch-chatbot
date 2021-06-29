@@ -35,7 +35,6 @@ class Environment():
 
         self.user_id = self.get_user_id()
         self.app_access = self.get_app_access()
-        self.refresh_token = self.get_refresh_token()
 
     
     # get new bearer token
@@ -159,7 +158,7 @@ class Environment():
 
 
     # TODO: use longer sql statement to update if exists
-    def set_refresh_token(self, token) -> None:
+    def set_refresh_token(self, token:str) -> None:
         # del old token
         engine.execute(
             delete(Tokens)

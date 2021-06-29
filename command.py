@@ -425,7 +425,7 @@ class FeatureRequestCommand(CommandBase):
     def execute(self, user, message):
         entry = {
                 "user": user, 
-                "message": message
+                "message": " ".join(message.split()[1:])
             }
         engine.execute(
             insert(FeatureRequest)

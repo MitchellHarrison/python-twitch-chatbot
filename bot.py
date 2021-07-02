@@ -2,7 +2,6 @@ import re
 import socket
 import command
 from datetime import datetime
-from colorama import Fore
 from sqlalchemy import insert, select
 from database import Session, Base, engine
 from models import ChatMessages, CommandUse, FalseCommands, BotTime, TextCommands
@@ -85,14 +84,15 @@ class Bot():
                 if not user_color:
                     rgb = default_color
                 else:
+                    # convert hex to RGB tuple
                     rgb = tuple(int(user_color[i:i+2], 16) for i in (0,2,4))
                     
                 # print colored chat message to terminal
                 print(f"\033[38;2;{rgb[0]};{rgb[1]};{rgb[2]}m" + f"{display_name}" + "\033[38;2;255;255;255m", f"{text}\n")
 
-                # respond to server pings
-                if text.lower().startswith("ping"):
-                    self.irc_command("PONG")
+                ## respond to server pings
+                #if text.lower().startswith("ping"):
+                #    self.irc_command("PONG")
 
                 # check for commands being used
                 if text.startswith("!"):
@@ -120,7 +120,7 @@ class Bot():
         )
         
 
-    # insert data to SQLite db
+    # insert data to db
     def store_message_data(self, user: str, user_id: str, message: str) -> None:
         entry = {
             "username" : user,

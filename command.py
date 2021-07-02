@@ -23,6 +23,11 @@ class CommandBase(ABC):
         raise NotImplementedError
 
 
+    @property
+    def restricted(self):
+        return False
+
+
     @abstractmethod
     def execute(self):
         raise NotImplementedError
@@ -65,10 +70,13 @@ class AddCommand(CommandBase):
     def command_name(self):
         return "!addcommand"
 
+    @property
+    def restricted(self):
+        return True
 
     def execute(self, user, message, badges):
         # only mods can run this command
-        if "mod" in badges:
+        if "moderator" in badges or "broadcaster" in badges:
             first_word = message.split()[1]
             command = first_word if first_word.startswith("!") else "!" + first_word
             result = " ".join(message.split()[2:])
@@ -97,10 +105,13 @@ class DeleteCommand(CommandBase):
     def command_name(self):
         return "!delcommand"
 
+    @property
+    def restricted(self):
+        return True
 
     def execute(self, user, message, badges):
         # only mods can run this command
-        if "mod" in badges:
+        if "moderator" in badges or "broadcaster" in badges:
             try:
                 first_word = message.split()[1]
             except IndexError:
@@ -142,10 +153,13 @@ class EditCommand(CommandBase):
     def command_name(self):
         return "!editcommand"
 
+    @property
+    def restricted(self):
+        return True
 
     def execute(self, user, message, badges):
-        # only mods can run this command
-        if "mod" in badges:
+        # only mods and streamer can run this command
+        if "moderator" in badges or "broadcaster" in badges:
             first_word = message.split()[1]
             command = first_word if first_word.startswith("!") else "!" + first_word
 
@@ -236,13 +250,11 @@ class CommandsCommand(CommandBase):
 
     def execute(self, user, message, badges):
         result = engine.execute(select(TextCommands.command)).fetchall()
+        subclasses = (s(self) for s in CommandBase.__subclasses__())
         text_commands = [c[0] for c in result]
-        hard_commands = [c.command_name for c in (s(self) for s in CommandBase.__subclasses__())]
-        commands_str = ", ".join(text_commands) + ", " + ", ".join(hard_commands)
+        hard_commands = [c.command_name for c in subclasses if not c.restricted]
 
-        # TODO: hide admin commands
-        for comm in ["!addcommand", "!delcommand", "!editcommand"]:
-            commands_str.replace(comm+",", "")
+        commands_str = ", ".join(text_commands) + ", " + ", ".join(hard_commands)
 
         # check if commands fit in chat; dropping
         while len(commands_str) > 500:

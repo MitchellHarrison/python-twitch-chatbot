@@ -52,6 +52,7 @@ class Bot():
             # respond to pings from Twitch
             if messages.startswith("PING"):
                 self.irc_command("PONG :tmi.twitch.tv")
+                continue
                 
             for m in messages.split("\r\n"):
                 self.parse_message(m)
@@ -71,7 +72,7 @@ class Bot():
                 message_data = pat_message.search(message).groupdict() 
 
                 # convert badges string to list of badges
-                badges_list = re.sub("/\d+,?", " ", message_data["badges"]).split() 
+                badges = re.sub("/\d+,?", " ", message_data["badges"]).split() 
 
                 text = message_data["text"]
                 user = message_data["username"]
@@ -90,17 +91,13 @@ class Bot():
                 # print colored chat message to terminal
                 print(f"\033[38;2;{rgb[0]};{rgb[1]};{rgb[2]}m" + f"{display_name}" + "\033[38;2;255;255;255m", f"{text}\n")
 
-                ## respond to server pings
-                #if text.lower().startswith("ping"):
-                #    self.irc_command("PONG")
-
                 # check for commands being used
                 if text.startswith("!"):
                     command = text.split()[0].lower()
                     if command not in self.text_commands and command not in self.commands:
                         self.store_wrong_command(user, command)
                     else:
-                        self.execute_command(user, command, text)
+                        self.execute_command(user, command, text, badges)
                 self.store_message_data(user, chatter_id, text)
 
         except AttributeError:
@@ -148,11 +145,11 @@ class Bot():
 
 
     # execute each command
-    def execute_command(self, user: str, command: str, message: str):
+    def execute_command(self, user: str, command: str, message: str, badges: list):
         # execute hard-coded command
         if command in self.commands.keys():
             admin_commands = ["!addcommand", "!editcommand", "!delcommand"]
-            self.commands[command].execute(user, message) 
+            self.commands[command].execute(user, message, badges) 
             is_custom_command = 0 
             self.store_command_data(user, command, is_custom_command)
 
@@ -177,3 +174,4 @@ class Bot():
         )
         commands = {k:v for k,v in [e for e in engine.execute(stmt)]}
         return commands
+

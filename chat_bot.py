@@ -16,7 +16,7 @@ def get_text_commands() -> dict:
 def main():
     # create all tables
     Base.metadata.create_all(bind=engine)
-    session = Session()
+
     # log bot startup time
     engine.execute(insert(BotTime))
 

@@ -36,7 +36,7 @@ class Environment():
         self.user_id = self.get_user_id()
         self.app_access = self.get_app_access()
 
-    
+
     # get new bearer token
     def refresh_bearer(self) -> None:
         # delete existing bearer

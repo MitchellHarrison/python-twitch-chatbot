@@ -30,8 +30,8 @@ def write_stream_data(entry: dict) -> None:
     ).fetchall()
 
 
+# once per minute
 def main():
-    # TODO: once per minute
     # get data
     data = get_stream_data()
     datapoints = [

@@ -88,14 +88,13 @@ class BotTime(Base):
 class Followers(Base):
     __tablename__ = "followers"
 
-    id_ = Column("id", Integer, primary_key=True)
+    user_id = Column("user_id", Integer, primary_key=True)
     time = Column("time", DateTime)
-    user_id = Column("user_id", Integer)
     username = Column("username", Text)
 
     def __init__(self):
-        self.time = time
         self.user_id = user_id
+        self.time = time
         self.username = username
 
 

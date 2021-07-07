@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Text, DateTime, Column
+from sqlalchemy import Column, Text, Integer, DateTime, Boolean
 from datetime import datetime
 from database import Base
 
@@ -26,11 +26,18 @@ class Viewers(Base):
     id_ = Column("id", Integer, primary_key=True)
     username = Column("username", Text)
     display_name = Column("display_name", Text)
-    is_follower = Column("is_follower", Integer)
+    is_follower = Column("is_follower", Boolean)
+    follow_time = Column("follow_time", DateTime)
+    banned = Column("banned", Boolean)
+    banned_time = Column("banned_time", DateTime)
 
     def __init__(self):
-        pass
-    
+        self.username == username
+        self.display_name = display_name
+        self.is_follower = is_follower
+        self.follow_time = follow_time
+        self.banned = banned
+        self.banned_time = banned_time
 
 class CommandUse(Base):
     __tablename__ = "command_use"
@@ -89,13 +96,15 @@ class Followers(Base):
     __tablename__ = "followers"
 
     user_id = Column("user_id", Integer, primary_key=True)
-    time = Column("time", DateTime)
+    follow_time = Column("follow_time", DateTime)
     username = Column("username", Text)
+    last_seen = Column("last_seen", DateTime, default=datetime.now())
 
     def __init__(self):
         self.user_id = user_id
-        self.time = time
+        self.follow_time = follow_time
         self.username = username
+        self.last_seen = last_seen
 
 
 class FeatureRequest(Base):

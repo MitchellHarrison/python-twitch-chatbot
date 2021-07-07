@@ -18,6 +18,7 @@ class Environment():
         self.client_id = os.getenv("CLIENT_ID")
         self.client_secret = os.getenv("CLIENT_SECRET")
         self.oauth = os.getenv("OAUTH_TOKEN")
+        self.callback_address = os.getenv("CALLBACK_ADDRESS")
 
         self.scopes = [
             "bits:read",

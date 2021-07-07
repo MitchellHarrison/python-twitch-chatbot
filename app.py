@@ -12,7 +12,9 @@ from sqlalchemy import insert, update
 from models import Subscriptions
 
 SUB_URL = "https://api.twitch.tv/helix/eventsub/subscriptions"
-CALLBACK = "https://74014203e3bf.ngrok.io"
+CALLBACK = env.callback_address
+PORT = "5000"
+LOCAL_ADDRESS = f"https://127.0.0.1:{PORT}"
 SECRET = "abc1234def"
 
 Base.metadata.create_all(bind=engine)
@@ -58,7 +60,7 @@ def request_user_auth(env=env):
     # create appropriate url for authorizing permissions
     params = {
         "client_id": env.client_id,
-        "redirect_uri": "https://localhost:5000/authorize",
+        "redirect_uri": f"{LOCAL_ADDRESS}/authorize",
         "response_type": "code",
         "scope": " ".join(env.scopes),
         "force_verify": "true"
@@ -184,7 +186,7 @@ def authorize():
         "client_secret": env.client_secret,
         "code": code,
         "grant_type": "authorization_code",
-        "redirect_uri": "https://localhost:5000/authorize"
+        "redirect_uri": f"{LOCAL_ADDRESS}/authorize"
     }
     response = requests.post(url=url, params=params)
 
@@ -222,6 +224,7 @@ def handle_cp():
 
     else: 
         print(flask_request.json)
+
     return Response(status=200)
 
 
@@ -273,7 +276,7 @@ def handle_stream_info_update():
 
 # run app
 if __name__ == "__main__":
-    app.run(ssl_context="adhoc", debug=True)
+    app.run(ssl_context="adhoc", port=443)
 
 
 # stream goes online
@@ -307,11 +310,8 @@ def handle_stream_offline():
         pass
 
     elif message_type == "notification":
-        # handle steam info update
-        print("A NEW FOLLOWER APPEARS")
-        data = flask_request.json
-        username = data["event"]["user_name"]
-        print(f"New follower is {username}!")
+        # handle stream offline
+        pass
 
     else:
         print(flask_request.json)

@@ -152,7 +152,7 @@ class Viewership(Base):
     __tablename__ = "viewership"
 
     id_ = Column("id", Integer, primary_key=True)
-    stream_id = Column("stream_id", Integer)
+    stream_id = Column("stream_id", Text)
     title = Column("title", Text)
     category_id = Column("game_id", Text)
     category = Column("game_name", Text)

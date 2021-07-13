@@ -15,7 +15,6 @@ def get_stream_data(env=env) -> dict:
     params = {"user_id": env.user_id}
     response = requests.get(url=url, headers=headers, params=params).json()
     data = response["data"][0]
-    print(data)
     return data
 
 

@@ -71,6 +71,10 @@ class Bot():
                 # get all message data as dict by group name
                 message_data = pat_message.search(message).groupdict() 
 
+                # TODO: emote storage
+                # emotes look like:
+                # 86:0-9,11-20,22-31,33-42,44-53
+
                 # convert badges string to list of badges
                 badges = re.sub("/\d+,?", " ", message_data["badges"]).split() 
 
@@ -148,13 +152,12 @@ class Bot():
     def execute_command(self, user: str, command: str, message: str, badges: list):
         # execute hard-coded command
         if command in self.commands.keys():
-            admin_commands = ["!addcommand", "!editcommand", "!delcommand"]
             self.commands[command].execute(user, message, badges) 
             is_custom_command = 0 
             self.store_command_data(user, command, is_custom_command)
 
             # refresh text commands dict if admin command used
-            if command in admin_commands:
+            if self.commands[command].restricted:
                 self.text_commands = self.reload_text_commands()
 
         # execute custom text commands

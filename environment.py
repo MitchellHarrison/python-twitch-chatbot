@@ -20,12 +20,6 @@ class Environment():
         self.oauth = os.getenv("OAUTH_TOKEN")
         self.callback_address = os.getenv("CALLBACK_ADDRESS")
 
-        self.scopes = [
-            "bits:read",
-            "channel:read:redemptions",
-            "channel:read:subscriptions"
-        ]
-
         # these are pre-defined
         self.irc_port = 6667
         self.irc_server = "irc.twitch.tv"

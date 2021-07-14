@@ -1,4 +1,5 @@
 import requests
+import re
 import random
 import json
 from datetime import datetime
@@ -77,10 +78,28 @@ class AddCommand(CommandBase):
     def execute(self, user, message, badges):
         # only mods can run this command
         if "moderator" in badges or "broadcaster" in badges:
-            first_word = message.split()[1]
+            first_word = message.split()[1].lower()
+
+            # check for invalid characters in command name
+            if re.match(r"[^a-zA-Z\d]", first_word):
+                self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = f"That command name contains invalid characters, {user}."
+                )
+                return
+
             command = first_word if first_word.startswith("!") else "!" + first_word
             result = " ".join(message.split()[2:])
 
+            # check for missing command output
+            if len(result) == 0:
+                self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = f"Every command needs text, {user}."
+                )
+                return
+
+            # check for duplicate command
             if command in self.bot.text_commands.keys():
                 self.bot.send_message(
                     self.bot.channel,
@@ -143,7 +162,7 @@ class DeleteCommand(CommandBase):
 
             self.bot.send_message(
                 self.bot.channel,
-                f"{command} command deleted, @{user}."
+                f"{command} command deleted!"
             )
 
 
@@ -169,7 +188,7 @@ class EditCommand(CommandBase):
             if command not in current_commands:
                 self.bot.send_message(
                     self.bot.channel,
-                    f"That command doesn't exist, @{user}."
+                    f"That command doesn't exist, {user}."
                 )
                 return
 
@@ -184,7 +203,7 @@ class EditCommand(CommandBase):
             
             self.bot.send_message(
                 self.bot.channel,
-                f"{command} command edit complete {user}!"
+                f"{command} command edit complete!"
             )
 
 
@@ -551,4 +570,63 @@ class LeaderboardCommand(CommandBase):
             channel = self.bot.channel,
             message = ", ".join(message_ranks)
         )
+
+
+class AliasCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!clone"
+
+    @property
+    def restricted(self):
+        return True
+
+
+    # this function adds an alias to the text_commands table
+    def add_alias(self, command, alias):
+        entry = {
+            "command": alias,
+            "message": self.bot.text_commands[command]
+        }
+        engine.execute(
+            insert(TextCommands)
+            .values(entry)
+        )
+    
+
+    def execute(self, user, message, badges):
+        if "moderator" in badges or "broadcaster" in badges:
+            params = message.split()
+            # correct if user doesn't pass enough parameters
+            if len(params) < 3:
+                self.bot.send_message(
+                    channel = self.bot.channel,
+                    message = f"You didn't give me enough direction, {user}. I am now lost in this world. :("
+                )
+                return
+
+            else:
+                # set commands to be aliases of one another
+                command1 = params[1] if params[1].startswith("!") else f"!{params[1]}"
+                command2 = params[2] if params[2].startswith("!") else f"!{params[2]}"
+
+
+                if command1 in self.bot.text_commands:
+                    self.add_alias(command1, command2)
+
+                elif command2 in self.bot.text_commands:
+                    self.add_alias(command2, command1)
+                    
+                # if neither command is a text command
+                else:
+                    self.bot.send_message(
+                        channel = self.bot.channel,
+                        message = f"I don't have those commands, {user}. Sorry!"
+                    )
+                    return
+
+                self.bot.send_message(
+                    channel = self.bot.channel, 
+                    message = "Clone created!"
+                )
 

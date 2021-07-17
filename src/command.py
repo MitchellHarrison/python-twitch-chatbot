@@ -630,3 +630,25 @@ class AliasCommand(CommandBase):
                     message = "Clone created!"
                 )
 
+
+# fun fact command
+class FactCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!fact"
+
+
+    def execute(self, user, message, badges):
+        url = "https://uselessfacts.jsph.pl/random.json?language=en"
+        response = requests.get(url).json()
+        fact = response["text"]
+
+        # check that fact fits in a chat message
+        while len(fact) > 450:
+            response =requests.get(url).json()
+            fact = response["text"]
+
+        self.bot.send_message(
+            channel = self.bot.channel,
+            message = f"FUN FACT: {fact}"
+        )

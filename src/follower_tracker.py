@@ -44,14 +44,16 @@ def refresh_follow_table(env=env) -> None:
         headers=FOLLOW_HEADERS, 
         params=params
     ).json()
+    print(response["total"])
 
     # run until end of follower list
     while True:
         data = response["data"]
-        params["after"] = cursor
         
+        # KeyError if on last page of followers
         try:
             cursor = response["pagination"]["cursor"]
+            params["after"] = cursor
         except KeyError:
             pass
 
@@ -62,19 +64,21 @@ def refresh_follow_table(env=env) -> None:
                 "follow_time": follower["followed_at"],
                 "username": follower["from_name"]
             }
+
             # if follower in table, update last_seen
             try:
                 update_entry = {
                     "last_seen": datetime.now(),
                     "username": entry["username"]
                 }
+
                 engine.execute(
                     update(Followers)
                     .where(Followers.user_id == entry["user_id"])
                     .values(update_entry)
                 )
 
-            # if follower not in database
+            # if follower not in database, add them
             except Exception as e: 
                 print(e)
                 # write new follower
@@ -82,6 +86,7 @@ def refresh_follow_table(env=env) -> None:
                     insert(Followers)
                     .values(entry)
                 )
+                print("new follower added")
 
         # stop running on last page
         if not response["pagination"]:

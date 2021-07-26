@@ -30,7 +30,7 @@ class Bot():
         self.irc_command(f"NICK {self.bot_name}")
         self.irc_command(f"JOIN #{self.channel}")        
         self.irc_command(f"CAP REQ :twitch.tv/tags")
-        self.send_message(self.channel, "I AM ALIVE!!")
+        self.send_message("I AM ALIVE!!")
         self.check_for_messages()
 
     
@@ -40,8 +40,8 @@ class Bot():
 
 
     # send privmsg's, which are normal chat messages
-    def send_message(self, channel: str, message: str):
-        self.irc_command(f"PRIVMSG #{channel} :{message}")
+    def send_message(self, message: str):
+        self.irc_command(f"PRIVMSG #{self.channel} :{message}")
 
 
     # decode incoming messages
@@ -163,7 +163,6 @@ class Bot():
         # execute custom text commands
         elif command in self.text_commands.keys():
             self.send_message(
-                self.channel,
                 self.text_commands[command]
             )
             is_custom_command = 1

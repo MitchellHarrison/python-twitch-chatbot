@@ -82,10 +82,7 @@ class AddCommand(CommandBase):
 
             # check for invalid characters in command name
             if re.match(r"[^a-zA-Z\d]", first_word):
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"That command name contains invalid characters, {user}."
-                )
+                self.bot.send_message(f"That command name contains invalid characters, {user}.")
                 return
 
             command = first_word if first_word.startswith("!") else "!" + first_word
@@ -93,18 +90,12 @@ class AddCommand(CommandBase):
 
             # check for missing command output
             if len(result) == 0:
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"Every command needs text, {user}."
-                )
+                self.bot.send_message(f"Every command needs text, {user}.")
                 return
 
             # check for duplicate command
             if command in self.bot.text_commands.keys():
-                self.bot.send_message(
-                    self.bot.channel,
-                    f"That command already exists, {user}."
-                )
+                self.bot.send_message(f"That command already exists, {user}.")
                 return
 
             entry = {"command":command, "message":result}
@@ -113,10 +104,7 @@ class AddCommand(CommandBase):
                 .values(entry)
             )
 
-            self.bot.send_message(
-                self.bot.channel,
-                f"{command} added successfully!"
-            )
+            self.bot.send_message(f"{command} added successfully!")
 
 
 class DeleteCommand(CommandBase):
@@ -134,10 +122,7 @@ class DeleteCommand(CommandBase):
             try:
                 first_word = message.split()[1]
             except IndexError:
-                self.bot.send_message(
-                    self.bot.channel,
-                    "You didn't select a command to delete!"
-                )
+                self.bot.send_message("You didn't select a command to delete!")
                 return
 
             command = first_word if first_word.startswith("!") else "!" + first_word
@@ -147,10 +132,7 @@ class DeleteCommand(CommandBase):
             current_commands = [c[0] for c in result]
 
             if command not in current_commands:
-                self.bot.send_message(
-                    self.bot.channel,
-                    f"The {command} command doesn't exist, {user}."
-                )
+                self.bot.send_message(f"The {command} command doesn't exist, {user}.")
                 return
 
             entry = {"command": command}
@@ -160,10 +142,7 @@ class DeleteCommand(CommandBase):
                 .where(TextCommands.command == command)
             )
 
-            self.bot.send_message(
-                self.bot.channel,
-                f"{command} command deleted!"
-            )
+            self.bot.send_message(f"{command} command deleted!")
 
 
 # edit existing text command
@@ -186,10 +165,7 @@ class EditCommand(CommandBase):
             current_commands = [c[0] for c in result]
 
             if command not in current_commands:
-                self.bot.send_message(
-                    self.bot.channel,
-                    f"That command doesn't exist, {user}."
-                )
+                self.bot.send_message(f"That command doesn't exist, {user}.")
                 return
 
             new_message = " ".join(message.split()[2:])
@@ -201,10 +177,7 @@ class EditCommand(CommandBase):
                 .values(message=new_message)
             )
             
-            self.bot.send_message(
-                self.bot.channel,
-                f"{command} command edit complete!"
-            )
+            self.bot.send_message(f"{command} command edit complete!")
 
 
 # check joke API for joke of length that fits in a chat message
@@ -222,15 +195,10 @@ class JokeCommand(CommandBase):
             result = requests.get(url, headers = headers).json()
             joke = result["joke"]
             if len(joke) <= max_message_len:
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = joke
-                )
+                self.bot.send_message(joke)
                 return
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = f"I'm sorry! I couldn't find a short enough joke. :("
-        )
+
+        self.bot.send_message(f"I'm sorry! I couldn't find a short enough joke. :(")
 
 
 class PoemCommand(CommandBase):
@@ -250,15 +218,10 @@ class PoemCommand(CommandBase):
             lines = poems[idx]["lines"]
             poem = "; ".join(lines)
             if len(poem) <= 500:
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = poem
-                )
+                self.bot.send_message(poem)
                 return
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = f"@{user}, I couldn't find a short enough poem. I'm sorry. :("
-        )
+
+        self.bot.send_message(f"@{user}, I couldn't find a short enough poem. I'm sorry. :(")
 
 
 class CommandsCommand(CommandBase):
@@ -281,10 +244,7 @@ class CommandsCommand(CommandBase):
             commands = commands[:-2]
             commands_str = " ".join(commands)
 
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = commands_str
-        )
+        self.bot.send_message(commands_str)
 
 
 # TODO: fill follower table with new script, update with eventsub
@@ -320,7 +280,7 @@ class CommandsCommand(CommandBase):
 #        }
 #
 #        # create message
-#        message = f"{user} has been following for"
+#        f"{user} has been following for"
 #        for k,v in follow_stats.items():
 #            if v > 0:
 #                message += f" {v} {k}"
@@ -330,8 +290,8 @@ class CommandsCommand(CommandBase):
 #
 #        # send message
 #        self.bot.send_message(
-#            channel = self.bot.channel,
-#            message = message
+#            
+#            message
 #        )
 
 
@@ -363,14 +323,11 @@ class BotTimeCommand(CommandBase):
 
         # send specific message if bot has been alive for under a minute
         if all(v==0 for v in uptime_stats.values()):
-            self.bot.send_message(
-                channel = self.bot.channel,
-                message = f"Give me a minute, {user}! I just woke up!"
-            )
+            self.bot.send_message(f"Give me a minute, {user}! I just woke up!")
             return
 
         # build output message
-        message = f"I have been alive for"
+        f"I have been alive for"
         for k,v in uptime_stats.items():
             if v > 0:
                 message += f" {v} {k}"
@@ -378,10 +335,7 @@ class BotTimeCommand(CommandBase):
                     message += "s"
         message += "!"
 
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = message
-        )
+        self.bot.send_message(message)
 
 
 class RankCommand(CommandBase):
@@ -400,10 +354,7 @@ class RankCommand(CommandBase):
             commands = self.get_commands()
 
             if command not in commands:
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"I don't have a {command} command! Sorry!"
-                )
+                self.bot.send_message(f"I don't have a {command} command! Sorry!")
                 return
 
             # query database for number of times each user used a given command
@@ -413,15 +364,12 @@ class RankCommand(CommandBase):
                 user_rank = users.index(user) + 1
             except ValueError:
                 self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"{user}, you haven't used that command since I've been listening. Sorry!"
+                    f"{user}, you haven't used that command since I've been listening. Sorry!"
                 )
                 return
+
             message = f"{user}, you are the number {user_rank} user of the {command} command out of {len(users)} users."
-            self.bot.send_message(
-                channel = self.bot.channel,
-                message = message
-            )
+            self.bot.send_message(message)
 
         else:
             chatters = self.get_top_chatters()
@@ -431,17 +379,11 @@ class RankCommand(CommandBase):
                 user_rank = chatters.index(user) + 1
 
                 # send the rank in chat
-                message = f"{user}, you are number {user_rank} out of {len(chatters)} chatters!"
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = message
-                )
+                f"{user}, you are number {user_rank} out of {len(chatters)} chatters!"
+                self.bot.send_message(message)
 
             except ValueError:
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"{user}, I don't have you on my list. This is awkward..."
-                )
+                self.bot.send_message(f"{user}, I don't have you on my list. This is awkward...")
 
             
 class FeatureRequestCommand(CommandBase):
@@ -460,10 +402,7 @@ class FeatureRequestCommand(CommandBase):
             .values(entry)
         )
 
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = f"Got it! Thanks for your help, {user}!"
-        )
+        self.bot.send_message(f"Got it! Thanks for your help, {user}!")
 
 
 class LurkCommand(CommandBase):
@@ -473,10 +412,7 @@ class LurkCommand(CommandBase):
 
     
     def execute(self, user, message, badges):
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = f"Don't worry {user}, we got mad love for the lurkers! <3"
-        )
+        self.bot.send_message(f"Don't worry {user}, we got mad love for the lurkers! <3")
         
 
 class ShoutoutCommand(CommandBase):
@@ -488,10 +424,7 @@ class ShoutoutCommand(CommandBase):
     def execute(self, user, message, badges):
         # check if user shouting out no one
         if len(message.split()) < 2:
-            self.bot.send_message(
-                channel = self.bot.channel,
-                message = f"I can't shoutout no one, {user}!"
-            )
+            self.bot.send_message(f"I can't shoutout no one, {user}!")
 
         # if shouting someone
         else:
@@ -499,10 +432,7 @@ class ShoutoutCommand(CommandBase):
 
             # correct for users trying to shout themselves out
             if user.lower() == so_user.lower():
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"You can't shoutout yourself, {user}!"
-                )
+                self.bot.send_message(f"You can't shoutout yourself, {user}!")
                 return
 
             # api only returns users that have streamed in the past six months
@@ -521,17 +451,11 @@ class ShoutoutCommand(CommandBase):
             # TODO: can't find absenth762 specifically
             if so_user.lower() == so_login:
                 so_url = f"https://twitch.tv/{so_login}"
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"Shoutout to {so_display_name}! Check them out here! {so_url}"
-                )
+                self.bot.send_message(f"Shoutout to {so_display_name}! Check them out here! {so_url}")
 
             # user could not exist or not have streamed in 6 months
             else:
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"{so_user} isn't a frequent streamer, {user}."
-                )
+                self.bot.send_message(f"{so_user} isn't a frequent streamer, {user}.")
 
 
 # TODO: !leaderboard command
@@ -550,10 +474,7 @@ class LeaderboardCommand(CommandBase):
             
             commands = self.get_commands()
             if command not in commands:
-                self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"Sorry {user}, that command doesn't exist!"
-                )
+                self.bot.send_message(f"Sorry {user}, that command doesn't exist!")
                 return
 
             users = self.get_command_users(command)
@@ -564,12 +485,8 @@ class LeaderboardCommand(CommandBase):
         top_n = 5
         leaders = users[:top_n]
         message_ranks = [f"{i}. {user}" for i,user in enumerate(leaders, start=1)]
-        print(message_ranks)
 
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = ", ".join(message_ranks)
-        )
+        self.bot.send_message(", ".join(message_ranks))
 
 
 class AliasCommand(CommandBase):
@@ -600,8 +517,7 @@ class AliasCommand(CommandBase):
             # correct if user doesn't pass enough parameters
             if len(params) < 3:
                 self.bot.send_message(
-                    channel = self.bot.channel,
-                    message = f"You didn't give me enough direction, {user}. I am now lost in this world. :("
+                    f"You didn't give me enough direction, {user}. I am now lost in this world. :("
                 )
                 return
 
@@ -619,23 +535,17 @@ class AliasCommand(CommandBase):
                     
                 # if neither command is a text command
                 else:
-                    self.bot.send_message(
-                        channel = self.bot.channel,
-                        message = f"I don't have those commands, {user}. Sorry!"
-                    )
+                    self.bot.send_message(f"I don't have those commands, {user}. Sorry!")
                     return
 
-                self.bot.send_message(
-                    channel = self.bot.channel, 
-                    message = "Clone created!"
-                )
+                self.bot.send_message("Clone created!")
 
 
 # fun fact command
 class FactCommand(CommandBase):
     @property
     def command_name(self):
-        return "!fact"
+        return "!funfact"
 
 
     def execute(self, user, message, badges):
@@ -648,7 +558,31 @@ class FactCommand(CommandBase):
             response =requests.get(url).json()
             fact = response["text"]
 
-        self.bot.send_message(
-            channel = self.bot.channel,
-            message = f"FUN FACT: {fact}"
-        )
+        self.bot.send_message(f"FUN FACT: {fact}") 
+
+# number fact command
+class YearCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!year"
+
+
+    def execute(self, user, message, badges):
+        words = message.split()
+        if len(words) < 2:
+            self.bot.send_message(f"I need a year to check, {user}.")
+            return
+        
+        else:
+            # get user's year choice
+            year = words[1]
+
+            # get fact from api
+            url = f"http://numbersapi.com/{year}/year"
+            fact = requests.get(url).text
+
+            # send fact in chat
+            self.bot.send_message(fact)
+
+
+

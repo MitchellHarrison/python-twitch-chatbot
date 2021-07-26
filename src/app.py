@@ -291,6 +291,7 @@ def handle_stream_online():
 
     elif message_type == "notification":
         # handle steam info update
+        # run viewership tracker (once per minute)
         pass
 
     else:
@@ -311,6 +312,7 @@ def handle_stream_offline():
 
     elif message_type == "notification":
         # handle stream offline
+        # stop running view tracker
         pass
 
     else:

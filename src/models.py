@@ -39,6 +39,7 @@ class Viewers(Base):
         self.banned = banned
         self.banned_time = banned_time
 
+
 class CommandUse(Base):
     __tablename__ = "command_use"
 
@@ -81,6 +82,7 @@ class FalseCommands(Base):
         self.command = command
 
 
+# single row to keep track of time bot was started
 class BotTime(Base):
     __tablename__ = "bot_time"
 
@@ -147,7 +149,7 @@ class Subscriptions(Base):
         self.sub_type = sub_type
 
 
-# TODO: (in progress) viewers per minute
+# tracking viewership with view_tracker.py
 class Viewership(Base):
     __tablename__ = "viewership"
 

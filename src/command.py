@@ -347,6 +347,7 @@ class RankCommand(CommandBase):
     def execute(self, user, message, badges):
         if len(message.split()) > 1:
             command = message.split()[1]
+
             # command use rank
             if not command.startswith("!"):
                 command = f"!{command}"
@@ -379,7 +380,7 @@ class RankCommand(CommandBase):
                 user_rank = chatters.index(user) + 1
 
                 # send the rank in chat
-                f"{user}, you are number {user_rank} out of {len(chatters)} chatters!"
+                message = f"{user}, you are number {user_rank} out of {len(chatters)} chatters!"
                 self.bot.send_message(message)
 
             except ValueError:

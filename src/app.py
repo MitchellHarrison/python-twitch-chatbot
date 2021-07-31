@@ -4,21 +4,36 @@ import requests
 import hashlib
 import webbrowser
 import urllib.parse
-from environment import env, Environment
-from flask import Flask, Response
+from uuid import UUID
+from environment import env
+from bot import Bot
+from flask import Flask, Response, make_response
 from flask import request as flask_request
 from database import engine, Base
 from sqlalchemy import insert, update
-from models import Subscriptions
+from models import Subscriptions, ChannelPointRewards
 
 SUB_URL = "https://api.twitch.tv/helix/eventsub/subscriptions"
 CALLBACK = env.callback_address
+HOST = "localhost"
 PORT = "5000"
-LOCAL_ADDRESS = f"https://127.0.0.1:{PORT}"
+LOCAL_ADDRESS = f"https://{HOST}:{PORT}"
 SECRET = "abc1234def"
 
 Base.metadata.create_all(bind=engine)
 app = Flask(__name__)
+
+# chat bot for sending messages
+bot = Bot(
+    env.irc_server,
+    env.irc_port,
+    env.oauth,
+    env.bot_name,
+    env.channel,
+    env.user_id,
+    env.client_id
+)
+bot.connect_to_channel()
 
 
 # TODO: values aren't matching expected
@@ -149,10 +164,20 @@ def refresh_user_access(env=env) -> None:
     result = requests.post(url)
 
 
+# reply to Twitch's challenge when creating subscription
+def challenge_reply(payload):
+    challenge = payload["challenge"]
+    response = make_response(challenge, 200)
+    response.mimetype = "text/plain"
+    return response
+
+
 # default route
 @app.route("/")
 def hello_chat():
     request_user_auth()
+    subs = get_subscriptions()
+    print(subs)
     desired_subs = {
         "channel.follow": CALLBACK+"/event/new_follower",
         "channel.update": CALLBACK+"/event/stream_info_update",
@@ -160,7 +185,9 @@ def hello_chat():
         "stream.offline": CALLBACK+"/event/stream_offline",
         "channel.channel_points_custom_reward_redemption.add": CALLBACK+"/event/cp_redemption"
     }
-    subs = get_subscriptions()
+    
+    # for sub in subs:
+    #     delete_subscription(subs[sub])
 
     # create subs that are missing
     for sub in desired_subs:
@@ -169,7 +196,7 @@ def hello_chat():
 
     subs = get_subscriptions()
     print("LIST OF CURRENT SUBSCRIPTIONS")
-    print(subs)
+    print([k for k,v in subs.items()])
     return Response(status=200)
 
 
@@ -178,6 +205,7 @@ def hello_chat():
 def authorize():
     # get code from Twitch's POST request
     code = flask_request.args["code"]
+    print("AUTH CODE:\n" + code)
     
     # get user access token using the above code
     url = "https://id.twitch.tv/oauth2/token"
@@ -209,18 +237,33 @@ def authorize():
 # in the event of channel point redemption
 @app.route("/event/cp_redemption", methods=["POST"])
 def handle_cp():
-    print("CHANNEL POINTS REDEEMED!!!!")
+    print("CHANNEL POINT URL CALLED")
     headers = flask_request.headers
     message_type = headers["Twitch-Eventsub-Message-Type"]
+    payload = flask_request.json
 
     # if callback is being used for validating a new subscription
     if message_type == "webhook_callback_verification":
-        # validate webhook signature
-        pass
+        return challenge_reply(payload)
 
     elif message_type == "notification":
         # handle new channel point redemption
-        print("CHANNEL POINTS WERE REDEEMED!!")
+        event = payload["event"]
+        reward = event["reward"]
+
+        # write cp data to db
+        entry = {
+            "event_id": UUID(event["id"]),
+            "reward_id": UUID(reward["id"]),
+            "title": reward["title"],
+            "cost": reward["cost"],
+            "user": event["user_name"]
+        }
+
+        engine.execute(
+            insert(ChannelPointRewards)
+            .values(entry)
+        )
 
     else: 
         print(flask_request.json)
@@ -231,21 +274,20 @@ def handle_cp():
 # new follower function
 @app.route("/event/new_follower", methods=["POST"])
 def handle_follower():
-    print("NEW FOLLOWER LINK USED!!!!!")
+    print("FOLLOWER URL USED")
     headers = flask_request.headers
     message_type = headers["Twitch-Eventsub-Message-Type"]
+    payload = flask_request.json
 
     # if callback is being used for validating a new subscription
     if message_type == "webhook_callback_verification":
-        # verify signature from POST header
-        pass
+        return challenge_reply(payload)
 
     # if message is a follower notification 
     elif message_type == "notification":
-        # bot sends thank you message
-        # add new follower to followers table
-        # change room light color
-        pass
+        event = payload["event"]
+        user = event["user_name"]
+        bot.send_message(f"Welcome aboard, {user}!")
 
     else:
         print(flask_request.json)
@@ -256,17 +298,20 @@ def handle_follower():
 # stream info changes
 @app.route("/event/stream_info_update", methods=["POST"])
 def handle_stream_info_update():
-    print("STREAM UPDATE LINK USED!")
+    print("STREAM UPDATE LINK USED")
     headers = flask_request.headers
     message_type = headers["Twitch-Eventsub-Message-Type"]
+    payload = flask_request.json
 
     if message_type == "webhook_callback_verification":
-        # validate sha256
-        pass
+        # validate with challenge from Twitch
+        return challenge_reply(payload)
 
     elif message_type == "notification":
-        # handle steam info update
-        pass
+        event = payload["event"]
+        title = event["title"]
+
+        print(f"The new title of the stream is:\n{title}")
 
     else:
         print(flask_request.json)
@@ -274,25 +319,19 @@ def handle_stream_info_update():
     return Response(status=200)
 
 
-# run app
-if __name__ == "__main__":
-    app.run(ssl_context="adhoc", port=443)
-
-
 # stream goes online
 @app.route("/event/stream_online", methods=["POST"])
 def handle_stream_online():
     headers = flask_request.headers
     message_type = headers["Twitch-Eventsub-Message-Type"]
+    payload = flask_request.json
 
     if message_type == "webhook_callback_verification":
-        # validate sha256
-        pass
+        return challenge_reply(payload)
 
     elif message_type == "notification":
-        # handle steam info update
-        # run viewership tracker (once per minute)
-        pass
+        event = payload["event"]
+        engine.execute(insert(StreamUptime))
 
     else:
         print(flask_request.json)
@@ -305,18 +344,21 @@ def handle_stream_online():
 def handle_stream_offline():
     headers = flask_request.headers
     message_type = headers["Twitch-Eventsub-Message-Type"]
+    payload = flask_request.json
 
     if message_type == "webhook_callback_verification":
-        # validate sha256
-        pass
+        return challenge_reply(payload)
 
     elif message_type == "notification":
-        # handle stream offline
-        # stop running view tracker
         pass
 
     else:
         print(flask_request.json)
 
     return Response(status=200)
+
+
+# run app
+if __name__ == "__main__":
+    app.run(debug=False, ssl_context="adhoc", host=HOST, port=PORT)
 

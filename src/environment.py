@@ -24,6 +24,14 @@ class Environment():
         self.irc_port = 6667
         self.irc_server = "irc.twitch.tv"
 
+        # required token scopes
+        self.scopes = [
+            "bits:read",
+            "channel:read:subscriptions",
+            "channel:moderate",
+            "channel:read:redemptions",
+        ]
+
         # start with new tokens
         self.refresh_bearer()
         self.refresh_app_access()

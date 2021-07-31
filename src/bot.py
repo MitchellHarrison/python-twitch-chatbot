@@ -9,8 +9,14 @@ from models import ChatMessages, CommandUse, FalseCommands, BotTime, TextCommand
 session = Session()
 Base.metadata.create_all(bind=engine)
 
+def get_text_commands() -> dict:
+    command_rows = engine.execute(select(TextCommands.command, TextCommands.message))
+    text_commands = {k:v for k,v in [e for e in command_rows]}
+    return text_commands
+
+
 class Bot():
-    def __init__(self, server: str, port: int, oauth_token: str, bot_name: str, channel: str, user_id: str, client_id: str, text_commands: dict):
+    def __init__(self, server: str, port: int, oauth_token: str, bot_name: str, channel: str, user_id: str, client_id: str):
         self.server = server
         self.port = port
         self.oauth_token = oauth_token
@@ -19,7 +25,7 @@ class Bot():
         self.user_id = user_id
         self.client_id = client_id
         self.commands = {s.command_name: s for s in (c(self) for c in command.CommandBase.__subclasses__())}
-        self.text_commands = text_commands
+        self.text_commands = get_text_commands()
 
 
     # connect to IRC server and begin checking for messages
@@ -31,7 +37,6 @@ class Bot():
         self.irc_command(f"JOIN #{self.channel}")        
         self.irc_command(f"CAP REQ :twitch.tv/tags")
         self.send_message("I AM ALIVE!!")
-        self.check_for_messages()
 
     
     # execute IRC commands

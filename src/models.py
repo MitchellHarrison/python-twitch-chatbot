@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Text, Integer, DateTime, Boolean
+from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 from database import Base
 
@@ -93,6 +94,17 @@ class BotTime(Base):
         self.uptime = uptime
 
 
+# stream uptime
+class StreamUptime(Base):
+    __tablename__ = "stream_uptime"
+
+    id_ = Column("id", Integer, primary_key=True)
+    uptime = Column("uptime", DateTime, default=datetime.now())
+
+    def __init__(self):
+        self.uptime = uptime
+
+
 # list of followers by user ID and follow time
 class Followers(Base):
     __tablename__ = "followers"
@@ -168,8 +180,23 @@ class Viewership(Base):
         self.game = game
         self.viewer_count = viewer_count
 
-# TODO: cp usage table
-#class ChannelPointRedemptions(Base):
-#    __tablename__ = "channel_point_redemptions"
 
+class ChannelPointRewards(Base):
+    __tablename__ = "cp_rewards"
+
+    id_ = Column("id", Integer, primary_key=True)
+    event_id = Column("event_id", UUID(as_uuid=True))
+    time = Column("redeemed_at", DateTime, default=datetime.now())
+    reward_id = Column("reward_id", UUID(as_uuid=True))
+    title = Column("title", Text)
+    cost = Column("cost", Integer)
+    user = Column("user", Text)
+
+    def __init__(self):
+        self.event_id = event_id
+        self.time = time
+        self.reward_id = reward_id
+        self.title = title
+        self.cost = cost
+        self.user = user
 

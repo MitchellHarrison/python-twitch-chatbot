@@ -66,6 +66,34 @@ class CommandBase(ABC):
         return [u[0] for u in result]
 
 
+    def get_timedelta_message(self, uptime, message_base, error_message) -> str:
+        now = datetime.now()
+
+        # get timedelta
+        delta = relativedelta.relativedelta(now, uptime)
+        uptime_stats = {
+            "year": delta.years,
+            "month": delta.months,
+            "day": delta.days,
+            "hour": delta.hours,
+            "minute": delta.minutes
+        }
+
+        # send specific message if bot has been alive for under a minute
+        if all(v==0 for v in uptime_stats.values()):
+            return error_message
+
+        # build output message
+        message = message_base
+        for k,v in uptime_stats.items():
+            if v > 0:
+                message += f" {v} {k}"
+                if v > 1:
+                    message += "s"
+        message += "!"
+        return message
+
+
 class AddCommand(CommandBase):
     @property
     def command_name(self):
@@ -305,35 +333,15 @@ class BotTimeCommand(CommandBase):
         # get most recent uptime
         result = engine.execute(
             select(BotTime.uptime)
-            .order_by(BotTime.id_.desc())
+            .order_by(BotTime.uptime.desc())
         ).fetchone()
+
         uptime = result[0]
+        message_base = "I have been alive for"
+        error_message = "Give me a minute, I just woke up!"
 
-        now = datetime.now()
-
-        # get timedelta
-        delta = relativedelta.relativedelta(now, uptime)
-        uptime_stats = {
-            "year": delta.years,
-            "month": delta.months,
-            "day": delta.days,
-            "hour": delta.hours,
-            "minute": delta.minutes
-        }
-
-        # send specific message if bot has been alive for under a minute
-        if all(v==0 for v in uptime_stats.values()):
-            self.bot.send_message(f"Give me a minute, {user}! I just woke up!")
-            return
-
-        # build output message
-        f"I have been alive for"
-        for k,v in uptime_stats.items():
-            if v > 0:
-                message += f" {v} {k}"
-                if v > 1:
-                    message += "s"
-        message += "!"
+        # create message from time delta
+        message = self.get_timedelta_message(uptime, message_base, error_message)
 
         self.bot.send_message(message)
 
@@ -561,6 +569,7 @@ class FactCommand(CommandBase):
 
         self.bot.send_message(f"FUN FACT: {fact}") 
 
+
 # number fact command
 class YearCommand(CommandBase):
     @property
@@ -586,4 +595,22 @@ class YearCommand(CommandBase):
             self.bot.send_message(fact)
 
 
+class UptimeCommand(CommandBase):
+    @property
+    def command_name(self):
+        return "!uptime"
+
+
+    def execute(self, user, message, badges):
+        result = engine.execute(
+            select(StreamUptime.uptime)
+            .order_by(StreamUptime.uptime.desc())
+        ).fetchone()
+
+        uptime = result[0]
+        message_base = "Stream has been live for"
+        error_message = "The stream isn't online...yet!"
+
+        message = self.get_timedelta_message(uptime, message_base, error_message)
+        self.bot.send_message(message)
 

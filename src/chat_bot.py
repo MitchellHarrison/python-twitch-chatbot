@@ -14,15 +14,7 @@ def main():
     # log bot startup time
     engine.execute(insert(BotTime))
 
-    bot = Bot(
-        env.irc_server,
-        env.irc_port,
-        env.oauth,
-        env.bot_name,
-        env.channel,
-        env.user_id,
-        env.client_id
-    )
+    bot = Bot()
     bot.connect_to_channel()
 
     # loop forever

@@ -1,6 +1,7 @@
 import re
 import socket
 import command
+from environment import env
 from datetime import datetime
 from sqlalchemy import insert, select
 from database import Session, Base, engine
@@ -16,7 +17,9 @@ def get_text_commands() -> dict:
 
 
 class Bot():
-    def __init__(self, server: str, port: int, oauth_token: str, bot_name: str, channel: str, user_id: str, client_id: str):
+    def __init__(self, server:str = env.irc_server, port:int = env.irc_port, oauth_token:str = env.oauth, 
+                bot_name:str = env.bot_name, channel:str = env.channel, user_id:str = env.user_id, 
+                client_id:str = env.client_id):
         self.server = server
         self.port = port
         self.oauth_token = oauth_token
@@ -49,7 +52,7 @@ class Bot():
         self.irc_command(f"PRIVMSG #{self.channel} :{message}")
 
 
-    # decode incoming messages
+    # main loop
     def check_for_messages(self):
         while True:
             messages = self.irc.recv(1024).decode()

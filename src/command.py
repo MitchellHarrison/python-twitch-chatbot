@@ -7,7 +7,7 @@ from dateutil import relativedelta
 from abc import ABC, abstractmethod
 from sqlalchemy import select, insert, delete, update, func
 from database import engine, Session, Base
-from models import BotTime, Followers, TextCommands, ChatMessages, CommandUse, FeatureRequest
+from models import BotTime, Followers, TextCommands, ChatMessages, CommandUse, FeatureRequest, StreamUptime
 from environment import env
 
 Base.metadata.create_all(bind=engine)
@@ -607,10 +607,14 @@ class UptimeCommand(CommandBase):
             .order_by(StreamUptime.uptime.desc())
         ).fetchone()
 
-        uptime = result[0]
-        message_base = "Stream has been live for"
-        error_message = "The stream isn't online...yet!"
+        try:
+            uptime = result[0]
+            message_base = "Stream has been live for"
+            error_message = "The stream isn't online...yet!"
 
-        message = self.get_timedelta_message(uptime, message_base, error_message)
-        self.bot.send_message(message)
+            message = self.get_timedelta_message(uptime, message_base, error_message)
+            self.bot.send_message(message)
+
+        except TypeError:
+            self.bot.send_message("I don't track stream uptimes yet!")
 

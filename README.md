@@ -1,3 +1,12 @@
+# Update: This project is no longer supported. There's a newer, better one [here](https://github.com/MitchellHarrison/stream-environment).
+This project began as a learning project. Part of that learning, for me, was relizing that my design got out of hand
+and became a nightmare to add features to in its current state. This monolithic design was fun to build, but I've moved 
+to a microservice-based project with more robust features. You can find that project [here](https://github.com/MitchellHarrison/stream-environment).
+Currently, the new design is all Python and uses Docker and Docker Compose, which should make using it much easier.
+
+Thank you for enjoying this project in its incomplete state. Feel free to star the new one and watch me build it
+[on stream](https://twitch.tv/mitchsworkshop).
+
 # A Python-Powered Twitch Chatbot. 
 ### An all-in-one Twitch engagement and analytics project, [built live on stream](https://twitch.tv/MitchsWorkshop). 
 Just add your credentials and go. 
